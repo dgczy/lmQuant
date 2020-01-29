@@ -24,7 +24,11 @@ from jqdata import jy
 
 # 日期时间
 import time 
+<<<<<<< HEAD
 from datetime import timedelta,date,datetime
+=======
+from datetime import timedelta, date
+>>>>>>> tsd
 
 IN_BACKTEST = not(os.environ.get("JUPYTERHUB_API_TOKEN") or os.environ.get("JPY_API_TOKEN"))
 
@@ -55,10 +59,17 @@ def exists_file_in_backtest(file_name):
         return False
 
     
+<<<<<<< HEAD
 exists_file=exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
   
     
 def get_volatility(df,years=None,days=30):
+=======
+exists_file = exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
+
+
+def get_volatility(df, years=None, days=30):
+>>>>>>> tsd
     """
     波动率
     df：数据表，df
@@ -68,6 +79,7 @@ def get_volatility(df,years=None,days=30):
     """
     # 按照年取数据
     if not years is None:
+<<<<<<< HEAD
         start_date=df.index[-1].date()-timedelta(365*years)
         df=df[df.index>=str(start_date)]  
 
@@ -88,6 +100,28 @@ def get_volatility(df,years=None,days=30):
     df['day_volatility']=np.log(df['pre']/df.iloc[:,0])
     # 波动率（年化收益率的方差*sqrt(250)）
     volatility=df['day_volatility'].std()*math.sqrt(250.0)*100
+=======
+        start_date = df.index[-1].date() - timedelta(365*years)
+        df = df[df.index >= str(start_date)]  
+
+    # 按照天数取数据
+    if not days is None:
+        start_date = df.index[-1].date() - timedelta(days+1)
+        df = df[df.index >= str(start_date)]  
+
+    # 无数据返回Nan
+    if len(df) == 0:
+        return float(np.NaN)
+
+    #前一日收盘价
+    df['pre'] = df.iloc[:,0].shift(1)
+    # 清除无效数据
+    df = df.dropna()
+    # 日收益率(当日收盘价/前一日收盘价，然后取对数)
+    df['day_volatility'] = np.log(df['pre']/df.iloc[:,0])
+    # 波动率（年化收益率的方差*sqrt(250)）
+    volatility = df['day_volatility'].std() * math.sqrt(250.0) * 100
+>>>>>>> tsd
 
     # 返回值
     return round(volatility,2) 
@@ -102,6 +136,7 @@ def get_annualized(df,years=5):
     """
     # 按照年取数据
     if not years is None:
+<<<<<<< HEAD
         start_date=df.index[-1].date()-timedelta(365*years)
         df=df[df.index>=str(start_date)]
     try:
@@ -113,6 +148,19 @@ def get_annualized(df,years=5):
         annualized=float(np.NaN) 
     # 返回报率
     return round(annualized,2)        
+=======
+        start_date = df.index[-1].date() - timedelta(365*years)
+        df = df[df.index >= str(start_date)]
+    try:
+        # 总收益率
+        annualized = (df.iloc[:,0][-1]-df.iloc[:,0][0])/df.iloc[:,0][0]
+        # 年化收益率
+        annualized = (pow(1+annualized,250/(years*250.0))-1)*100
+    except:
+        annualized = float(np.NaN)
+    # 返回报率
+    return round(annualized,2)
+>>>>>>> tsd
 
 
 def get_divid(code,end_date):
