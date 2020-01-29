@@ -53,7 +53,7 @@ def exists_file_in_backtest(file_name):
         # 出现错误，则文件不存在
         return False
 
-exists_file=exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
+exists_file = exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
 
 
 
@@ -94,7 +94,7 @@ def get_volatility(df, years=None, days=30):
     return round(volatility,2) 
 
 
-def get_annualized(df,years=5): 
+def get_annualized(df, years=5): 
     """
     年化回报率
     df：数据表，df
@@ -113,7 +113,7 @@ def get_annualized(df,years=5):
     except:
         annualized = float(np.NaN)
     # 返回报率
-    return round(annualized,2)
+    return round(annualized, 2)
 
 
 def get_divid(code,end_date):
@@ -300,26 +300,25 @@ class Code(object):
             # 查询    
             temp_df=jy.run_query(q)  
             # 无数据时退出
-            if len(temp_df)==0:
+            if len(temp_df) == 0:
                 break
             # 追加数据
-            df=df.append(temp_df)
-            # 偏移值每次递增3000    
-            offset+=3000    
+            df = df.append(temp_df)
+            # 偏移值每次递增3000
+            offset += 3000
         # 返回代码list
-        return df.InnerCode.tolist()    
-    
-    @classmethod        
-    def idx_to_jy(cls,code):
+        return df.InnerCode.tolist()
+
+    @classmethod
+    def idx_to_jy(cls, code):
         if type(code) is str:
-            return cls.__secu_to_jy([code[0:6]],category=4)[0]
+            return cls.__secu_to_jy([code[0:6]], category=4)[0]
         elif type(code) is list:
-            return cls.__secu_to_jy([item[0:6] for item in code],category=4)
-        
-    @classmethod        
-    def stk_to_jy(cls,code):
+            return cls.__secu_to_jy([item[0:6] for item in code], category=4)
+
+    @classmethod
+    def stk_to_jy(cls, code):
         if type(code) is str:
-            return cls.__secu_to_jy([code[0:6]],category=1)[0]
+            return cls.__secu_to_jy([code[0:6]], category=1)[0]
         elif type(code) is list:
-            return cls.__secu_to_jy([item[0:6] for item in code],category=1)
-                
+            return cls.__secu_to_jy([item[0:6] for item in code], category=1)
