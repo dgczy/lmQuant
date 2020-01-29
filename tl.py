@@ -34,8 +34,7 @@ IN_BACKTEST = not(os.environ.get("JUPYTERHUB_API_TOKEN") or os.environ.get("JPY_
 
 
 
-
-# 检测文件      
+# 检测文件
 def exists_file_in_research(file_name):
     """
     研究中检测文件，使用os.path.exists函数
@@ -44,7 +43,7 @@ def exists_file_in_research(file_name):
     return os.path.exists(file_name) 
 
 
-# 检测文件      
+# 检测文件
 def exists_file_in_backtest(file_name):
     """
     策略中检测文件，使用read_file函数
@@ -58,6 +57,7 @@ def exists_file_in_backtest(file_name):
         # 出现错误，则文件不存在
         return False
 
+<<<<<<< HEAD
     
 <<<<<<< HEAD
 exists_file=exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
@@ -65,6 +65,9 @@ exists_file=exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
     
 def get_volatility(df,years=None,days=30):
 =======
+=======
+
+>>>>>>> tsd
 exists_file = exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
 
 
@@ -113,8 +116,8 @@ def get_volatility(df, years=None, days=30):
     if len(df) == 0:
         return float(np.NaN)
 
-    #前一日收盘价
-    df['pre'] = df.iloc[:,0].shift(1)
+    # 前一日收盘价
+    df['pre'] = df.iloc[:, 0].shift(1)
     # 清除无效数据
     df = df.dropna()
     # 日收益率(当日收盘价/前一日收盘价，然后取对数)
@@ -174,22 +177,22 @@ def get_divid(code,end_date):
     if not type(code) is list:
         code=[code]
 
-    #聚宽代码转换为jy内部代码    
+    # 聚宽代码转换为jy内部代码    
     InnerCodes=Code.stk_to_jy(code)
-    #获取所有成份股派息总额
-    #数据表    
+    # 获取所有成份股派息总额
+    # 数据表    
     df=pd.DataFrame()
-    #因jy每次最多返回3000条数据，所以要多次查询
-    #偏移值
+    # 因jy每次最多返回3000条数据，所以要多次查询
+    # 偏移值
     offset=0    
     while True:
-        #查询语句
+        # 查询语句
         q=query(
-            #内部代码
+            # 内部代码
             jy.LC_Dividend.InnerCode,
-            #派息日期
+            # 派息日期
             jy.LC_Dividend.ToAccountDate,
-            #派息总额
+            # 派息总额
             jy.LC_Dividend.TotalCashDiviComRMB,
         ).filter(
             # 已分红
@@ -197,15 +200,15 @@ def get_divid(code,end_date):
             # 获取指定日期前所有分红
             jy.LC_Dividend.ToAccountDate<=end_date,
             jy.LC_Dividend.InnerCode.in_(InnerCodes)
-        #偏移         
+        # 偏移         
         ).offset(offset)
-        #查询    
+        # 查询    
         temp_df=jy.run_query(q)  
         if len(temp_df)==0:
             break
-        #追加数据
+        # 追加数据
         df=df.append(temp_df)
-        #偏移值每次递增3000    
+        # 偏移值每次递增3000    
         offset+=3000
 
     if len(df)==0:
@@ -215,31 +218,31 @@ def get_divid(code,end_date):
         df['sort']=df['InnerCode'].astype('str')+df['ToAccountDate'].astype('str').str[0:10]
         df=df.sort('sort') 
         # 只保留最后一次派息数据
-        df=df.drop_duplicates('InnerCode',take_last=True) #keep='last'
+        df=df.drop_duplicates('InnerCode',take_last=True) # keep='last'
         # 返回合计的派息数
         div=df['TotalCashDiviComRMB'].sum()
 
-    #获取指数总市值 
+    # 获取指数总市值 
     q=query(
-        #市值
+        # 市值
         valuation.market_cap
     ).filter(
         valuation.code.in_(code)
     )
-    #获取各成份股市值(亿元)
+    # 获取各成份股市值(亿元)
     df=get_fundamentals(q,end_date)
-    #返回合计的成份股总市值（亿元）
+    # 返回合计的成份股总市值（亿元）
     cap=df['market_cap'].sum()
 
     try:
-        #返回股息率
+        # 返回股息率
         return div/cap/100000000*100.0,cap
     except:
         return float('NaN'),float('NaN')
 
-        
-#对源数据按照周、月、年筛选 
-#period：D、W、M分别为日线、周线、月线
+
+# 对源数据按照周、月、年筛选 
+# period：D、W、M分别为日线、周线、月线
 def data_to_period(df,period='W'):
     df['date']=df.index
     df=df.resample(period,how='last')
@@ -250,27 +253,27 @@ def data_to_period(df,period='W'):
     return df    
 
 
-#四分位去除负值、极值
+# 四分位去除负值、极值
 def data_del_IQR(p,k=0.5):
-    #去除负值
+    # 去除负值
     x=np.array(p[p>0])
-    #排序
+    # 排序
     x=np.sort(x)
-    #取中值
+    # 取中值
     m=np.median(x)
-    #按照m分为两个数据表
-    #取小于m的数据表中值
+    # 按照m分为两个数据表
+    # 取小于m的数据表中值
     q1=np.median(x[x<=m])
-    #取大于m的数据表中值
+    # 取大于m的数据表中值
     q3=np.median(x[x>m])
-    #计算上下临界值
+    # 计算上下临界值
     d=q1-k*(q3-q1)
     u=q3+k*(q3-q1) 
-    #取大于d小于u且大于0的数据，并去除空值
+    # 取大于d小于u且大于0的数据，并去除空值
     return p[(p>d)&(p<u)&(p>0)].dropna()
 
 
-#四分位填充极值
+# 四分位填充极值
 def data_fill_IQR(p,k=0.734):
     x=np.array(p)
     x=np.sort(x)
@@ -330,30 +333,30 @@ class Code(object):
     @classmethod        
     def __secu_to_jy(cls,codes,category=1):      
         df=pd.DataFrame()
-        #因jy每次最多返回3000条数据，所以要多次查询
-        #偏移值
+        # 因jy每次最多返回3000条数据，所以要多次查询
+        # 偏移值
         offset=0    
         while True:
             q=query(
-                #内部代码
+                # 内部代码
                 jy.SecuMain.InnerCode,
             ).filter(
-                #去除聚宽代码后缀
+                # 去除聚宽代码后缀
                 jy.SecuMain.SecuCode.in_(codes),
-                #限定查询股票
+                # 限定查询股票
                 jy.SecuMain.SecuCategory==category
-                #偏移         
+                # 偏移         
             ).offset(offset)
-            #查询    
+            # 查询    
             temp_df=jy.run_query(q)  
-            #无数据时退出
+            # 无数据时退出
             if len(temp_df)==0:
                 break
-            #追加数据
+            # 追加数据
             df=df.append(temp_df)
-            #偏移值每次递增3000    
+            # 偏移值每次递增3000    
             offset+=3000    
-        #返回代码list
+        # 返回代码list
         return df.InnerCode.tolist()    
     
     @classmethod        
