@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 """
 investing网站历史行情数据
 网站：
@@ -74,12 +72,15 @@ class Invest(object):
         session = requests.session()
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 \
     (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36'
+
         session.headers.update({'User-Agent': user_agent})
         session.get('https://tvc-cncdn.investing.com')
 
         # url
         url = 'https://tvc4.forexpros.com/a5cb6ed3c0b48d5dc77f0991b1717479/1531986161/6/6/28/history?\
-    symbol=%s&resolution=%s&from=%s&to=%s' % (code, period, date_to_timestamp(start_date), date_to_timestamp(end_date))
+    symbol=%s&resolution=%s&from=%s&to=%s' % (code, period,
+                                              date_to_timestamp(start_date),
+                                              date_to_timestamp(end_date))
         # 请求数据
         response = session.get(url)
         if not response.ok:
@@ -93,10 +94,17 @@ class Invest(object):
 
         # 生成数据表
         df = pd.DataFrame(
-            data={'close': data.get('c'), 'high': data.get('h'), 'low': data.get('l'), 'open': data.get('o')})
+            data={
+                'close': data.get('c'),
+                'high': data.get('h'),
+                'low': data.get('l'),
+                'open': data.get('o')
+            })
 
         # 转换日期格式
-        df.index = pd.to_datetime([timestamp_to_date(item) for item in data.get('t')], format='%Y-%m-%d')
+        df.index = pd.to_datetime(
+            [timestamp_to_date(item) for item in data.get('t')],
+            format='%Y-%m-%d')
         # 保留2位小数位
         # df=np.round(df,2)
 
