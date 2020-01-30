@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+
 """
 功能：
     数据读写引擎
@@ -77,7 +79,7 @@ class Sqlite(object):
             # 生成数据库副本连接
             connect = create_engine('sqlite:///%s' % temp_file)
         return connect
-
+    
     def restore(self):
         """
         功能：策略中，策略结束前恢复数据库

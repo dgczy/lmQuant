@@ -78,6 +78,8 @@ class Hsi(object):
             date_list.append(date_new)
             break
         df = pd.DataFrame(data_list, index=date_list, columns=[data_tpye])
+
+          pass        
         # 返回数据
         return df
 
