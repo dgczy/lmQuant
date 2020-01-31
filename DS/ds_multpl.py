@@ -239,3 +239,9 @@ class Spx(object):
         df.index.name = None
         # 返回数据
         return df[df.index >= '1997-12-31'].astype('float')
+
+
+
+
+
+ 
