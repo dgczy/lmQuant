@@ -1,367 +1,595 @@
-# -*- coding: utf-8 -*-
+# -*- coding:utf-8 -*-
+
+try:
+    # 策略中必须导入kuanke.user_space_api包
+    from kuanke.user_space_api import *
+except:
+    pass
+
+# 日期时间
+from datetime import timedelta, date, datetime
+
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
+
+# 聚宽数据
+# from jqdata import *
+from jqdatasdk import *
+
+# import sys
+# sys.path.append('../DS')
+
+# 各类数据源
+from ds_hsi import Hsi
+from ds_wall import Wall
+from ds_xueqiu import Xueqiu
+from ds_multpl import Spx
+from ds_sws import Sws
+from ds_sina import Sina
+from ds_east import Ced, Shibor
+# from ds_csindex import Plate
 
 
-"""
-功能：
-    数据读写引擎
-版本：
-    v 0.1
-说明：
-    量化研究数据的标准、通用读写
-    研究、策略中通用
-    分为sqlite数据库版和cvs文件版
-    两个版本的读写方法及参数、返回数据完全一致
-"""
-
-import os
-
-# 环境检测包/
-# from tl import IN_BACKTEST
-
-# 判断运行环境
-IN_BACKTEST=False
-
-if IN_BACKTEST:
-    # 策略环境
-    # 策略中必须导入kuanke.user_space_api包，用于支持read_file,write_file
-    from kuanke.user_space_api import read_file, write_file
-
-    print('数据引擎：运行于策略')
-else:
-    # 研究环境
-    print("数据引擎：运行于研究")
-
-# 基本包
-import numpy as np
-import pandas as pd
-
-# 系统、数据流包
-import io
-import six
-from six import StringIO, BytesIO
-
-# 数据持久化包
-import pickle
-
-# 数据库包
-from sqlalchemy import create_engine
-
-
-class Sqlite(object):
+class _TInfo(object):
     """
-    功能：数据库读写（sqlite）
-    name：数据库名，str，如：‘idx_db’
-    path：数据库路径，str，如：'data/'、‘../data/’
+    数据源信息
+    name：中文简称，str
+    start_date：成立日期，str
+    """
+    def __init__(self, name, start_date, data_type):
+        self.name = name
+        self.start_date = start_date
+        self.data_type = data_type
+
+
+class _TData(object):
+    """
+    数据源基类
     """
 
-    def __init__(self, name, path):
-        self.__in_research = not IN_BACKTEST
-        self.__name = name
-        self.__path = path
-        self.__connect = self.__connection()
+    #代码
+    _codes = {}
 
-    def __connection(self):
-        """
-        功能：连接数据库
-        参数：无
-        返回：数据库链接
-        """
-        if self.__in_research:
-            # 研究中，直接连接数据库
-            connect = create_engine('sqlite:///%s%s.db' % (self.__path, self.__name))
+    @classmethod
+    def in_codes(cls, code):
+        # 判断代码是否适配
+        return code in cls._codes
+
+
+class _CMI(_TData):
+    """
+    A股指数数据源
+    """
+    @classmethod
+    def __convert_code(cls, code):
+        # 代码转换
+        if code.endswith('SH'):
+            return code.replace('SH', 'XSHG')
+        if code.endswith('SZ'):
+            return code.replace('SZ', 'XSHE')
         else:
-            # 策略中，生成一个副本数据库到策略的默认目录，生成副本数据库的连接
-            # 数据库文件
-            data_file = '%s%s.db' % (self.__path, self.__name)
-            # 读取数据库到内存
-            data = read_file(data_file)
-            # 副本文件
-            temp_file = '%s_temp.db' % (self.__name)
-            # 写内存数据到策略默认目录中
-            with open(temp_file, 'wb') as f:
-                f.write(data)
-            # 生成数据库副本连接
-            connect = create_engine('sqlite:///%s' % temp_file)
-        return connect
+            return code
 
-    def restore(self):
-        """
-        功能：策略中，策略结束前恢复数据库
-        参数：无
-        返回：无
-        """
-        # 数据库文件
-        data_file = '%s%s.db' % (self.__path, self.__name)
-        # 副本数据库文件
-        temp_file = '%s_temp.db' % (self.__name)
-        # 读取副本数据库到内存
-        with open(temp_file, 'rb') as f:
-            data = f.read()
-        # 覆盖研究中的原数据库
-        write_file(data_file, data, append=False)
+    @staticmethod
+    def in_codes(code):
+        return code.endswith('SZ') or code.endswith('SH') or code.endswith(
+            'XSHG') or code.endswith('XSHE')
 
-    def read(self, name, cols=None, parse_dates=False, encoding=None):
-        """
-        功能：读取数据
-        name：表名，str，如：‘idx_000300’
-        cols：字段名，list，如：[‘close’,'open']
-        parse_dates：是否解析日期，bool
-        encoding：编码格式，str
-        返回：数据表，dataframe
-        """
-        # 修正parse_dates
-        parse_dates = ['index'] if parse_dates else None
-        # 从数据库中读取表，并重置索引
-        df = pd.read_sql(name, self.__connect, columns=cols, index_col='index', parse_dates=parse_dates)
-        df.index.name = None
-        # 返回数据
+    @classmethod
+    def hist(cls,
+             code,
+             start_date=None,
+             end_date=None,
+             fields=None,
+             period='D'):
+        # 日期检查
+        if end_date is None:
+            # 今天日期
+            end_date = datetime.now().date().strftime('%Y-%m-%d')
+        # 历史行情（聚宽数据）
+        return get_price(cls.__convert_code(code),
+                         start_date=start_date,
+                         end_date=end_date,
+                         frequency='daily',
+                         fields=fields)
+
+    @classmethod
+    def info(cls, code):
+        # 信息（聚宽数据）
+        infos = get_security_info(cls.__convert_code(code))
+        return _TInfo(infos.display_name,
+                      infos.start_date.strftime('%Y-%m-%d'), infos.type)
+
+    @classmethod
+    def stocks(cls, code, end_date=None):
+        # 成份股（聚宽数据）
+        return get_index_stocks(cls.__convert_code(code), date=end_date)
+
+
+class _CMS(_TData):
+    """
+    A股股票、场内基金数据源
+    """
+    @classmethod
+    def __convert_code(cls, code):
+        # 代码转换
+        if code.endswith('SH'):
+            return code.replace('SH', 'XSHG')
+        if code.endswith('SZ'):
+            return code.replace('SZ', 'XSHE')
+        else:
+            return code
+
+    @staticmethod
+    def in_codes(code):
+        return code.endswith('SZ') or code.endswith('SH') or code.endswith(
+            'XSHG') or code.endswith('XSHE')
+
+    @classmethod
+    def hist(cls,
+             code,
+             start_date=None,
+             end_date=None,
+             fields=None,
+             period='D'):
+        # 日期检查
+        if end_date is None:
+            # 今天日期
+            end_date = datetime.now().date().strftime('%Y-%m-%d')
+        # 历史行情（聚宽数据）
+        return get_price(cls.__convert_code(code),
+                         start_date=start_date,
+                         end_date=end_date,
+                         frequency='daily',
+                         fields=fields)
+
+    @classmethod
+    def info(cls, code):
+        # 信息（聚宽数据）
+        infos = get_security_info(cls.__convert_code(code))
+        return _TInfo(infos.display_name,
+                      infos.start_date.strftime('%Y-%m-%d'), infos.type)
+
+
+class _CMO(_TData):
+    """
+    A股场外基金数据源
+    """
+    @staticmethod
+    def in_codes(code):
+        return code.endswith('OF')
+
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 基金净值（聚宽数据）
+        df = get_extras('unit_net_value',
+                        code,
+                        start_date=start_date,
+                        end_date=end_date)
+        # 更改列名
+        df.columns = ['close']
         return df
 
-    def save(self, name, df, append=True, encoding=None):
-        """
-        功能：保存数据到表、默认为追加模式
-        name：表名，str
-        df：数据表，dataframe
-        append：追加、替换模式，bool
-        encoding：编码格式，str
-        返回：无
-        """
-        # 追加或替换
-        exists = 'append' if append else 'replace'
-        # code转换为表名，追加数据
-        df.to_sql(name, self.__connect, if_exists=exists)
-
-    def append(self, name, df):
-        """
-        功能：追加数据到表
-        name：表名，str
-        df：数据表，dataframe
-        """
-        # 追加数据
-        self.save(name, df, True)
-
-    def replace(self, name, df):
-        """
-        功能：替换数据表
-        name：表名，str
-        df：数据表，dataframe
-        """
-        # 替换数据
-        self.save(name, df, False)
+    @classmethod
+    def info(cls, code):
+        # 基金信息（聚宽数据）
+        infos = get_security_info(code)
+        return _TInfo(infos.name, infos.start_date.strftime('%Y-%m-%d'),
+                      infos.type)
 
 
-class _Cvs_Backtest(object):
+class _CMU(_TData):
     """
-    功能：CSV文件操作（策略环境 ） 
-    说明：策略中必须用read_file、write_file读写研究文件
-    path：文件路径，str
+    申万指数数据源
     """
+    @staticmethod
+    def in_codes(code):
+        return code in Sws.sw1_codes
 
-    # 构造行数
-    def __init__(self, path=''):
-        # 文件路径
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 申万行业数据（申万官网）
+        return Sws.hist_data(code, start_date, end_date, period)
 
-    def read(self, name, cols=None, parse_dates=False, encoding=None):
-        """
-        功能：读取数据库表
-        name：表名，str，如：‘idx_000300’
-        cols：字段名，list，如：[‘close’,'open']
-        parse_dates：是否解析日期，bool
-        encoding：编码格式，str
-        返回：数据表，dataframe
-        """
-        # 使用cols时，默认不包括index列，所以必须加上index列
-        cols = None if cols is None else [0] + cols
-        # 策略中必须使用StringIO+read_file方法
-        df = pd.read_csv(StringIO(read_file('%s%s.csv' % (self.__path, name))),
-                         usecols=cols, index_col=0, parse_dates=parse_dates, encoding=encoding)
-        # 返回数据表
-        return df
+    @classmethod
+    def info(cls, code):
+        # 申万行业信息（聚宽）
+        infos = get_industries(name='sw_l1')
+        return _TInfo(infos.at[code, 'name'],
+                      infos.at[code, 'start_date'].strftime('%Y-%m-%d'),
+                      'industry')
 
-    def save(self, name, df, append=True, encoding=None):
-        """
-        功能：保存数据到表、默认为追加模式
-        name：表名，str
-        df：数据表，dataframe
-        append：追加、替换模式，bool
-        encoding：编码格式，str
-        返回：无
-        """
-        # 修正追加或替换模式
-        mode = 'a' if append else 'w'
-        # 追加模式下不追加数据表头，替换模式使用数据表头
-        header = False if append else True
-        # 策略中必须使用write_file方法
-        write_file('%s%s.csv' % (self.__path, name),
-                   df.to_csv(mode=mode, header=header, encoding=encoding), append=append)
+    @staticmethod
+    def stocks(code, end_date=None):
+        # 申万行业成份股（聚宽）
+        return get_industry_stocks(code, date=end_date)
 
 
-class _Cvs_Research(object):
+class _HMI(_TData):
     """
-    功能：CSV文件读写（研究环境 ）  
-    path：文件路径，str
+    港股指数数据源
     """
+    _codes = {
+        'HSI': {
+            'name': u'恒生指数',
+            'start_date': '1964-07-31',
+            'stock_count': 500,
+        },
+        'HSCEI': {
+            'name': '恒生国企',
+            'start_date': '2000-01-03',
+            'stock_count': 500,
+        },
+    }
 
-    # 构造行数
-    def __init__(self, path=''):
-        # 文件路径
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 雪球官网数据
+        df = Xueqiu.hist_price(code, start_date)
+        if df is None:
+            return None
+        # 恒生官网数据
+        pe_df = Hsi.hist_data(code, 'pe')
+        dyr_df = Hsi.hist_data(code, 'dyr')
+        if not pe_df is None:
+            df['pe_e'] = pe_df.resample('D', fill_method='ffill')
+        if not dyr_df is None:
+            df['dyr'] = dyr_df.resample('D', fill_method='ffill')
+        return df.fillna(method='bfill').fillna(method='ffill')
 
-    def read(self, name, cols=None, parse_dates=False, encoding=None):
-        """
-        功能：从csv文件读取数据
-        name：表名，str，如：‘idx_000300’
-        cols：字段名，list，如：[‘close’,'open']
-        parse_dates：是否解析日期，bool
-        encoding：编码格式，str
-        返回：数据表，dataframe
-        """
-        # 使用cols时，默认不包括index列，所以必须加上index列
-        cols = None if cols is None else [0] + cols
-        # 读取cvs文件
-        df = pd.read_csv('%s%s.csv' % (self.__path, name),
-                         usecols=cols, index_col=0, parse_dates=parse_dates, encoding=encoding)
-        # 返回数据表
-        return df
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code].get('name'),
+                      cls._codes[code].get('start_date'), 'index')
 
-    def save(self, name, df, append=True, encoding=None):
-        """
-        功能：保存数据到csv文件
-        name：表名，str
-        df：数据表，dataframe
-        append：追加、替换模式，bool
-        encoding：编码格式，str
-        返回：无
-        """
-        # 修正追加或替换模式
-        mode = 'a' if append else 'w'
-        # 追加模式下不追加数据表头，替换模式使用数据表头
-        header = False if append else True
-        # 保存结果
-        df.to_csv('%s%s.csv' % (self.__path, name), mode=mode, header=header, encoding=encoding)
+    @staticmethod
+    def stocks(code, end_date=None):
+        # 恒生官网数据
+        return Hsi.stocks(code)
 
 
-class _Pickle_Backtest(object):
+class _SPX(_TData):
     """
-    功能：Pickle读写（策略环境 ）  
-    说明：策略中必须用read_file、write_file读写研究文件
-    path：文件路径，str
+    标普500数据源
     """
+    _codes = {
+        # 美股指数
+        'SPX': {
+            'name': u'标普500',
+            'start_date': '1871-01-01',
+            'stock_count': 500,
+        },
+    }
 
-    # 构造行数
-    def __init__(self, path=''):
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # price（雪球官网数据）
+        df = Xueqiu.hist_price(code, start_date)
+        if df is None:
+            return None
+        # pe（multpl网站月线数据）
+        pe_df = Spx.hist_data('pe', start_date)
+        # dyr（multpl网站月线数据）
+        dyr_df = Spx.hist_data('dyr', start_date)
+        if not pe_df is None:
+            # pe按照日线重新采样，合并到price
+            df['pe_e'] = pe_df.resample('D', fill_method='ffill')
+        if not dyr_df is None:
+            # dyr按照日线重新采样，合并到price
+            df['dyr'] = dyr_df.resample('D', fill_method='ffill')
+        # 缺失值，按照bfill填充
+        return df.fillna(method='bfill').fillna(method='ffill')
 
-    def read(self, name):
-        """
-        功能：读取pickle
-        name：文件名，str
-        返回：数据
-        """
-        data = pickle.load(StringIO(read_file('%s%s.pkl' % (self.__path, name))))
-        return data
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code].get('name'),
+                      cls._codes[code].get('start_date'), 'index')
 
-    def save(self, name, data):
-        """
-        功能：写入pickle
-        name：文件名，str
-        data：数据
-        返回：无
-        """
-        write_file('%s%s.pkl' % (self.__path, name), pickle.dumps(data), append=False)
+    @classmethod
+    def stocks(cls, code, end_date=None):
+        return [None for i in range(cls._codes[code].get('stock_count'))]
 
 
-class _Pickle_Research(object):
+class _OMI(_TData):
     """
-    功能：Pickle读写（研究环境 ）  
-    path：文件路径，str
+    海外指数数据源
     """
+    _codes = {
+        # 美股指数
+        'DJIA': {
+            'name': u'道琼斯',
+            'start_date': '1998-01-20',
+            'stock_count': 30,
+        },
+        'NDAQ': {
+            'name': u'纳斯达克',
+            'start_date': '2005-02-09',
+            'stock_count': 3258,
+        },
+        # 欧洲
+        'GDAXI': {
+            'name': u'德国DAX',
+            'start_date': '1871-01-01',
+            'stock_count': 30,
+        },
+        'FTSE': {
+            'name': u'英国富时100',
+            'start_date': '1871-01-01',
+            'stock_count': 100,
+        },
+        'FCHI': {
+            'name': u'法国CAC40',
+            'start_date': '1871-01-01',
+            'stock_count': 40,
+        },
+        'SX5E': {
+            'name': u'欧洲斯托克50',
+            'start_date': '1871-01-01',
+            'stock_count': 50,
+        },
+        # 亚洲
+        'N225': {
+            'name': u'日经225',
+            'start_date': '1871-01-01',
+            'stock_count': 225,
+        },
+    }
 
-    # 构造行数
-    def __init__(self, path=''):
-        # 文件路径
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 华尔街见闻网站数据
+        try:
+            return Wall.hist_price(code, start_date, end_date)
+        except Exception as e:
+            print ('%s：%s' % ("华尔街见闻网站数据", e))
+            return None
 
-    def read(self, name):
-        """
-        功能：读取pickle
-        name：文件名，str
-        返回：数据
-        """
-        with open('%s%s.pkl' % (self.__path, name), 'r') as pick_file:
-            data = pickle.load(pick_file)
-        return data
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code].get('name'),
+                      cls._codes[code].get('start_date'), 'index')
 
-    def save(self, name, data):
-        """
-        功能：写入pickle
-        name：文件名，str
-        data：数据
-        返回：无
-        """
-        with open('%s%s.pkl' % (self.__path, name), 'w') as pick_file:
-            # 第三个参数必须为0
-            pickle.dump(data, pick_file, 0)
+    @classmethod
+    def stocks(cls, code, end_date=None):
+        return [None for i in range(cls._codes[code].get('stock_count'))]
 
 
-class Image_Research(object):
+class _MCD(_TData):
     """
-    功能：图表保存为图像（研究环境 ）  
-    path：文件路径，str
+    中国经济指标数据源
     """
+    _codes = {
+        'CPI': '居民消费价格指数',
+        'PPI': '工业品出厂价格指数',
+        'PMI': '采购经理人指数',
+        'MS': '货币供应量',
+        'NFC': '新增信贷数据',
+        'GDP': '国内生产总值',
+        'SCN': '股票账户新开',
+    }
 
-    def __init__(self, path=''):
-        # 文件路径
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 东方财富网数据
+        return Ced.hist_data(code, start_date, end_date)
 
-    def save(self, fig, file_name, file_type='png'):
-        """
-        功能：图表保存为图像
-        fig：图表画板对象
-        file_name：文件名，str
-        file_type：图像类型，即扩展名
-        返回：无
-        """
-        # 文件全名
-        file_name = self.__path + file_name + '.' + file_type
-        # 使用画板对象的savefig方法生成图表为图像
-        # 参数bbox_inches='tight'、,pad_inches=0必须，否则生成的图像有边框
-        fig.savefig(file_name, dpi=fig.dpi, bbox_inches='tight', pad_inches=0)
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code], None, 'macro')
 
 
-class Image_Backtest(object):
+class _MCR(_TData):
     """
-    功能：图表保存为图像（策略环境 ）  
-    path：文件路径，str
+    宏观指标数据源
     """
+    _codes = {
+        'UDI': u'美元指数',
+        'VIX': u'VIX波动率',
+        'BDI': u'波罗的海干散货指数',
+        'C10Y': u'中国十年期国债',
+        'C5Y': u'中国五年期国债',
+        'U10Y': u'美国十年期国债',
+        'U5Y': u'美国五年期国债',
+        'UCH': '离岸人民币',
+        'UCY': '在岸人民币',
+    }
 
-    def __init__(self, path=''):
-        # 文件路径
-        self.__path = path
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 华尔街见闻网站数据
+        try:
+            return Wall.hist_price(code, start_date, end_date)
+        except Exception as e:
+            print ('%s：%s' % ("华尔街见闻网站数据", e))
+            return None
 
-    def save(self, fig, file_name, file_type='png'):
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code], None, 'macro')
+
+
+class _SHI(_TData):
+    """
+    上海银行同行业拆借利率
+    """
+    _codes = {
+        'SHIBOR': u'上海银行同行业拆借利率',
+    }
+
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 东方财富网数据
+        return Shibor.hist_data(start_date, end_date)
+
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code], None, 'macro')
+
+
+class _CMM(_TData):
+    """
+    大宗商品数据源
+    """
+    _codes = {
+        'GC': u'comex黄金',
+        'SI': u'comex白银',
+        'XAU': u'伦敦金',
+        'XAG': u'伦敦银',
+        'CL': u'NYMEX原油',
+        'OIL': u'布伦特原油'
+    }
+
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 新浪网财经数据
+        return Sina.hist_price(code, start_date, end_date)
+
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code], None, 'commodity')
+
+
+class _CBK(_TData):
+    """
+    中证官网板块数据源
+    """
+    _codes = {
+        'SHA': '上海A股',
+        'SZA': '深圳A股',
+        'HSA': '沪深A股',
+        'SZB': '深市主板',
+        'ZXB': '中小板',
+        'CYB': '创业板',
+    }
+
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        # 中证官网数据
+        return Plate.hist_data(code, start_date, end_date)
+
+    @classmethod
+    def info(cls, code):
+        return _TInfo(cls._codes[code], None, 'plate')
+
+
+#########################################################################################################
+# 数据分类接口
+#########################################################################################################
+
+
+# 指数
+class dsIdx(object):
+    """
+    指数数据源
+    """
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        for data in [_CMI, _HMI, _SPX, _OMI]:
+            if data.in_codes(code):
+                return data.hist(code, start_date, end_date, fields)
+
+    @staticmethod
+    def info(code):
+        for data in [_CMI, _CMS, _HMI, _SPX, _OMI]:
+            if data.in_codes(code):
+                return data.info(code)
+
+    @staticmethod
+    def stocks(code, end_date=None):
+        for data in [_CMI, _CMS, _HMI, _SPX, _OMI]:
+            if data.in_codes(code):
+                return data.stocks(code, end_date)
+
+
+# 宏观指标
+class dsMcr(object):
+    """
+    宏观经济指标数据源
+    """
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        for data in [_MCR, _MCD, _SHI]:
+            if data.in_codes(code):
+                return data.hist(code, start_date, end_date, fields)
+
+    @staticmethod
+    def info(code):
+        for data in [_MCR, _MCD, _SHI]:
+            if data.in_codes(code):
+                return data.info(code)
+
+
+# 基金（场内基金、场外基金）
+class dsFnd(object):
+    """
+    基金数据源（含场内、场外）
+    """
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
+        for data in [_CMS, _CMO]:
+            if data.in_codes(code):
+                return data.hist(code, start_date, end_date, fields)
+
+    @staticmethod
+    def info(code):
+        for data in [_CMS, _CMO]:
+            if data.in_codes(code):
+                return data.info(code)
+
+
+# 商品
+dsCmm = _CMM
+
+# 板块
+dsPlt = _CBK
+
+# 行业
+dsIdu = _CMU
+
+# 股票
+dsStk = _CMS
+
+#########################################################################################################
+# 数据通用接口
+#########################################################################################################
+
+
+class dsData(object):
+    """
+    数据源通用数据接口
+    """
+    @staticmethod
+    def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         """
-        功能：图表保存为图像
-        fig：图表画板对象
-        file_name：文件名，str
-        file_type：图像类型，即扩展名
-        返回：无
+        历史行情
         """
-        # 文件名
-        file_name = file_name + '.' + file_type
-        # 先保存到策略目录下，作为临时文件
-        fig.savefig(file_name, dpi=fig.dpi, bbox_inches='tight', pad_inches=0)
-        # 读取临时文件
-        with open(file_name, 'rb') as fp:
-            data = fp.read()
-        # 保存到研究中
-        write_file(self.__path + file_name, data, append=False)
-        # 删除临时文件
-        os.remove(file_name)
+        for data in [
+                _CMI, _CMS, _CMO, _HMI, _SPX, _OMI, _CMM, _CMU, _CMO, _MCR,
+                _MCD, _SHI, _CBK
+        ]:
+            if data.in_codes(code):
+                return data.hist(code, start_date, end_date, fields)
 
+    @staticmethod
+    def info(code):
+        """
+        信息
+        """
+        for data in [
+                _CMI, _CMS, _CMO, _HMI, _SPX, _OMI, _CMM, _CMU, _CMO, _MCR,
+                _MCD, _SHI, _CBK
+        ]:
+            if data.in_codes(code):
+                return data.info(code)
 
-# 根据运行环境初始化Cvs、Pickle、Image
-Csv = _Cvs_Backtest if IN_BACKTEST else _Cvs_Research
-Pickle = _Pickle_Backtest if IN_BACKTEST else _Pickle_Research
-Image = Image_Backtest if IN_BACKTEST else Image_Research
+    @staticmethod
+    def stocks(code, end_date=None):
+        """
+        成份股
+        """
+        for data in [
+                _CMI, _CMS, _CMO, _HMI, _SPX, _OMI, _CMM, _CMU, _CMO, _MCR,
+                _MCD, _SHI, _CBK
+        ]:
+            if data.in_codes(code):
+                return data.stocks(code, end_date)

@@ -6,10 +6,14 @@
 import numpy as np
 import pandas as pd
 import time
-import jqdata
+import jqdatasdk
 
 from datetime import timedelta,date
 
+import sys
+
+sys.path.append("../DS")
+sys.path.append("../TL")
 
 #导入自定义包
 from tl import IN_BACKTEST,get_volatility,get_annualized
@@ -22,9 +26,9 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg') 
-    print '商品框架：运行于策略'
+    print ('商品框架：运行于策略')
 else:
-    print '商品框架：运行于研究'
+    print ('商品框架：运行于研究')
     
 import matplotlib.pyplot as plt
 

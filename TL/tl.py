@@ -6,27 +6,29 @@
 
 # 基本包
 
-try:
-    # 策略中必须导入kuanke.user_space_api包
-    from kuanke.user_space_api import *
-except:
-    pass
+# try:
+#     # 策略中必须导入kuanke.user_space_api包
+#     from kuanke.user_space_api import *
+# except:
+#     pass
 
 import numpy as np
 import pandas as pd
 import math
 import os
 
-# 聚源数据、交易日
-from jqdata import jy
+try:
+    # 聚源数据、交易日
+    from jqdata import jy
+except:
+    pass    
 
 # 日期时间
 import time
 from datetime import timedelta
 
-IN_BACKTEST = not (os.environ.get("JUPYTERHUB_API_TOKEN")
-                   or os.environ.get("JPY_API_TOKEN"))
-
+IN_BACKTEST = False  
+# IN_BACKTEST = not (os.environ.get("JUPYTERHUB_API_TOKEN") or os.environ.get("JPY_API_TOKEN"))
 
 # 检测文件
 def exists_file_in_research(file_name):

@@ -8,8 +8,13 @@ import math
 import os
 
 # 聚源数据、交易日
-from jqdata import jy,get_trade_days
+from jqdatasdk import get_trade_days
 
+import sys
+
+sys.path.append("../DS")
+sys.path.append("../TL")
+sys.path.append("../DM")
 # 自定数据引擎
 from dm import *
 # 环境检测
@@ -102,7 +107,7 @@ class TPool(object):
             # 转换为代码列表
             self.to_track(self.__pool)
         except:
-            print '%s 标的不存在!'%(self.project.note)    
+            print ('%s 标的不存在!'%(self.project.note))
  
 
     def create(self,pool):
@@ -246,7 +251,7 @@ class Tdata(object):
         
         # 遍历代码列表
         for code in codes:
-            print '\r数据更新：%s'%(self.pool.name(code)),
+            print ('\r数据更新：%s'%(self.pool.name(code)),end="")
             # 判断数据文件是否存在
             # 不存在则初次获取，存在则追加数据
             try:           
@@ -278,12 +283,12 @@ class Tdata(object):
                 self.save(code,df,append=append)
                 # 获取更新日期
                 #update_date=df.index[-1].date()
-                print code
+                print(code)
                 n+=1
         if n>0:          
-            print '\r数据更新：%s，已更新 %s 个'%(self.project.note,n)
+            print ('\r数据更新：%s，已更新 %s 个'%(self.project.note,n),end="")
         else:
-            print '\r数据更新：%s，无需更新'%(self.project.note)
+            print ('\r数据更新：%s，无需更新'%(self.project.note),end="")
             
         # 记录更新日期
         #self.update_date=update_date
@@ -465,9 +470,9 @@ class Tanalyse(object):
             df=self.get_analysis(codes,items)
             # 保存分析表     
             self.save(df) 
-            print '\r数据分析：%s%s，分析完毕'%(self.project.note,TField.name(self.analyse_name))
+            print ('\r数据分析：%s%s，分析完毕'%(self.project.note,TField.name(self.analyse_name)),end="")
         else:
-            print '\r数据分析：%s%s，无需重新分析'%(self.project.note,TField.name(self.analyse_name))
+            print ('\r数据分析：%s%s，无需重新分析'%(self.project.note,TField.name(self.analyse_name)),end="")
                  
         
            
@@ -596,7 +601,7 @@ class Tvalue(Tanalyse):
         for item in items:
             #遍历所有字段
             for code,name in codes.items():
-                print u'\r数据分析：%s，[ %s ] 数据'%(name,TField.name(item)),
+                print ('\r数据分析：%s，[ %s ] 数据'%(name,TField.name(item)),end="")
                 #print code
                 #读取数据
                 df=self.data.read(code,years=item)
@@ -647,7 +652,7 @@ class Tchange(Tanalyse):
         #标准分析字段
         for item in items:
             for code,name in codes.items():
-                print u'\r数据分析：%s，[ %s ] 数据'%(name,TField.name(item)),
+                print ('\r数据分析：%s，[ %s ] 数据'%(name,TField.name(item)),end="")
                 #获取数据
                 df=self.data.read(code,items=[item]) 
                 #标准分析
@@ -1437,7 +1442,7 @@ class Ttable(object):
         #显示指定指数
         df=df[df.index.isin(codes)]
         #排序
-        df=df.sort([sort],ascending=asc)
+        # df=df.sort_index([sort],ascending=asc)
         #更改标题
         df=df.rename(columns=self.value_columns(item,item_name)) 
         return df

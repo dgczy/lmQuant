@@ -15,8 +15,28 @@
 
 import os
 
+# 基本包
+import pandas as pd
+
+# 系统、数据流包
+import io
+
+# import six
+from six import StringIO, BytesIO
+
+# 数据持久化包
+import pickle
+
+# 数据库包
+from sqlalchemy import create_engine
+
+import sys
+sys.path.append('../TL')
+
 # 环境检测包
 from tl import IN_BACKTEST
+
+# IN_BACKTEST=False
 
 # 判断运行环境
 if IN_BACKTEST:
@@ -28,19 +48,6 @@ else:
     # 研究环境
     print("数据引擎：运行于研究")
 
-# 基本包
-import pandas as pd
-
-# 系统、数据流包
-import io
-# import six
-from six import StringIO, BytesIO
-
-# 数据持久化包
-import pickle
-
-# 数据库包
-from sqlalchemy import create_engine
 
 
 class Sqlite(object):
@@ -211,6 +218,7 @@ class _Cvs_Research(object):
     def __init__(self, path=''):
         # 文件路径
         self.__path = path
+  
 
     def read(self, name, cols=None, parse_dates=False, encoding=None):
         """
@@ -223,6 +231,7 @@ class _Cvs_Research(object):
         """
         # 使用cols时，默认不包括index列，所以必须加上index列
         cols = None if cols is None else [0] + cols
+        
         # 读取cvs文件
         df = pd.read_csv('%s%s.csv' % (self.__path, name),
                          usecols=cols,

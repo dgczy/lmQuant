@@ -10,6 +10,9 @@ import json
 import requests
 import time  
 from datetime import timedelta,date,datetime
+
+import sys
+sys.path.append("../TL")
 from tl import date_to_timestamp,timestamp_to_date
 
 """
