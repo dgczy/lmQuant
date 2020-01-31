@@ -654,7 +654,9 @@ class Tchange(Tanalyse):
             for code,name in codes.items():
                 print ('\r数据分析：%s，[ %s ] 数据'%(name,TField.name(item)),end="")
                 #获取数据
-                df=self.data.read(code,items=[item]) 
+                print (item)
+                # df=self.data.read(code,items=[[item]])#
+                df=self.data.read(code)
                 #标准分析
                 val_results=self.standard_analysis(name,item,df)
                 #扩展分析、子类实现

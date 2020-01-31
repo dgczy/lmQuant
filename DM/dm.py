@@ -382,6 +382,6 @@ class Image_Backtest(object):
 
 
 # 根据运行环境初始化Cvs、Pickle、Image
-Csv = _Cvs_Backtest if IN_BACKTEST else _Cvs_Research
+Csv = _Cvs_Research# _Cvs_Backtest if IN_BACKTEST else _Cvs_Research
 Pickle = _Pickle_Backtest if IN_BACKTEST else _Pickle_Research
 Image = Image_Backtest if IN_BACKTEST else Image_Research

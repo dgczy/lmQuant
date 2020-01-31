@@ -14,6 +14,7 @@ import sys
 
 sys.path.append("../DS")
 sys.path.append("../TL")
+sys.path.append('../DM')
 
 #导入自定义包
 from tl import IN_BACKTEST,get_volatility,get_annualized

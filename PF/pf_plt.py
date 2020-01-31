@@ -26,6 +26,11 @@ import math
 import time
 from datetime import timedelta,date,datetime
 
+import sys
+sys.path.append("../DS")
+sys.path.append("../TL")
+sys.path.append('../DM')
+
 #导入自定义包
 from tl import IN_BACKTEST
 from pf import *
@@ -37,9 +42,9 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg') 
-    print '板块框架：运行于策略'
+    print ('板块框架：运行于策略')
 else:
-    print '板块框架：运行于研究'
+    print ('板块框架：运行于研究')
     
 import matplotlib.pyplot as plt
 

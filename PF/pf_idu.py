@@ -27,7 +27,13 @@ from datetime import timedelta, date, datetime
 import requests
 
 #聚源包（获取派息数据）
-from jqdata import get_industries
+from jqdatasdk import get_industries
+
+import sys
+
+sys.path.append("../DS")
+sys.path.append("../TL")
+sys.path.append('../DM')
 
 #导入自定义包
 # 工具
@@ -43,9 +49,9 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg')
-    print '行业框架：运行于策略'
+    print ('行业框架：运行于策略')
 else:
-    print '行业框架：运行于研究'
+    print ('行业框架：运行于研究')
 
 import matplotlib.pyplot as plt
 

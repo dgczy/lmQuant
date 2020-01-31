@@ -20,6 +20,11 @@ import math
 # 日期时间
 import time
 from datetime import timedelta, date, datetime
+import sys
+
+sys.path.append("../DS")
+sys.path.append("../TL")
+sys.path.append('../DM')
 
 # 自定义包
 from tl import IN_BACKTEST, data_to_period, data_del_IQR, get_volatility, get_annualized, get_divid
@@ -32,9 +37,9 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg')
-    print '指数框架：运行于策略'
+    print ('指数框架：运行于策略')
 else:
-    print '指数框架：运行于研究'
+    print ('指数框架：运行于研究')
 
 import matplotlib.pyplot as plt
 
@@ -237,10 +242,10 @@ class _Data(Tdata):
         # 获取估值数据
         valuation_list = []
         for d in date_list:
-            print '\r数据更新：%s %s' % (self.pool.track[code],
-                                    d.strftime('%Y年%m月%d日')),
+            print ('\r数据更新：%s %s' % (self.pool.track[code],
+                                    d.strftime('%Y年%m月%d日')),end="")
             valuation_list.append(self.__get_hs_day(code, d))
-        print '\r',
+        print ('\r',end="")
 
         # 生成估值数据表
         valuation_df = pd.DataFrame(data=valuation_list,
@@ -271,7 +276,7 @@ class _Data(Tdata):
             return df
         except Exception as e:
             print('%s' % e)
-            print '\r数据更新：%s 失败' % self.pool.track[code],
+            print ('\r数据更新：%s 失败' % self.pool.track[code],end="")
 
     def get_data(self, code, start_date=None, end_date=None):
         """
