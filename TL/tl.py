@@ -21,14 +21,15 @@ try:
     # 聚源数据、交易日
     from jqdata import jy
 except:
-    pass    
+    pass
 
 # 日期时间
 import time
 from datetime import timedelta
 
-IN_BACKTEST = False  
+IN_BACKTEST = False
 # IN_BACKTEST = not (os.environ.get("JUPYTERHUB_API_TOKEN") or os.environ.get("JPY_API_TOKEN"))
+
 
 # 检测文件
 def exists_file_in_research(file_name):
@@ -189,9 +190,9 @@ def get_divid(code, end_date):
 
 # 对源数据按照周、月、年筛选
 # period：D、W、M分别为日线、周线、月线
-def data_to_period(df, period='W'):
+def data_to_period(df, period='W'):  
     df['date'] = df.index
-    df = df.resample(period, how='last')
+    df = df.resample(period).last()
     df.index = df['date']
     del df['date']
     df = df.dropna()

@@ -7,7 +7,7 @@
 SQLIte数据库和CVS文件通用
 
 作者：DGC'Idea
-版本：V0.31  
+版本：V0.31
 更新日期：2018年6月3日
 
 """
@@ -20,8 +20,9 @@ import math
 # 日期时间
 import time
 from datetime import timedelta, date, datetime
-import sys
 
+
+import sys
 sys.path.append("../DS")
 sys.path.append("../TL")
 sys.path.append('../DM')
@@ -243,7 +244,7 @@ class _Data(Tdata):
         valuation_list = []
         for d in date_list:
             print ('\r数据更新：%s %s' % (self.pool.track[code],
-                                    d.strftime('%Y年%m月%d日')),end="")
+                                    d.strftime('%Y-%m-%日')),end="")
             valuation_list.append(self.__get_hs_day(code, d))
         print ('\r',end="")
 
@@ -413,7 +414,7 @@ class _Chart(Tchart):
                  (self.pool.track[code1], item_name, self.pool.track[code2]),
                  (u'%s%s %s  %s') %
                  (mode_name, Fields.label[years], Fields.label[period],
-                  df.index[-1].strftime('%Y年%m月%d日'))]
+                  df.index[-1].strftime(u'%Y-%m-%d'))]
         #画线
         ax = df.plot(figsize=(18, 8),
                      secondary_y=[right],
@@ -475,7 +476,7 @@ class _Chart(Tchart):
         #图表标题
         title = [(u'%s-%s算法对比') % (self.pool.track[code], item_name),
                  (u'%s %s  %s') % (Fields.label[years], Fields.label[period],
-                                   df.index[-1].strftime('%Y年%m月%d日'))]
+                                   df.index[-1].strftime('%Y-%m-%d'))]
         #图例列表
         item_legend = [
             '等权平均值 %.2f' % item_e,

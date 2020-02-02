@@ -7,17 +7,13 @@ except:
     pass
 
 # 日期时间
-from datetime import timedelta, date, datetime
-
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
+from datetime import  datetime
 
 # 聚宽数据
-# from jqdata import *
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
 from jqdatasdk import *
 
-# import sys
-# sys.path.append('../DS')
 
 # 各类数据源
 from ds_hsi import Hsi
@@ -27,7 +23,7 @@ from ds_multpl import Spx
 from ds_sws import Sws
 from ds_sina import Sina
 from ds_east import Ced, Shibor
-# from ds_csindex import Plate
+from ds_csindex import Plate
 
 
 class _TInfo(object):
@@ -47,7 +43,7 @@ class _TData(object):
     数据源基类
     """
 
-    #代码
+    # 代码
     _codes = {}
 
     @classmethod
@@ -341,7 +337,7 @@ class _OMI(_TData):
         try:
             return Wall.hist_price(code, start_date, end_date)
         except Exception as e:
-            print ('%s：%s' % ("华尔街见闻网站数据", e))
+            print('%s：%s' % ("华尔街见闻网站数据", e))
             return None
 
     @classmethod
@@ -400,7 +396,7 @@ class _MCR(_TData):
         try:
             return Wall.hist_price(code, start_date, end_date)
         except Exception as e:
-            print ('%s：%s' % ("华尔街见闻网站数据", e))
+            print('%s：%s' % ("华尔街见闻网站数据", e))
             return None
 
     @classmethod

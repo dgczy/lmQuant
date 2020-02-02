@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 """
 功能：
     数据读写引擎
@@ -15,17 +13,14 @@
 
 import os
 
-# 基本包
-import pandas as pd
-
-# 系统、数据流包
-import io
-
 # import six
-from six import StringIO, BytesIO
+from six import StringIO
 
 # 数据持久化包
 import pickle
+
+# 基本包
+import pandas as pd
 
 # 数据库包
 from sqlalchemy import create_engine
@@ -36,8 +31,6 @@ sys.path.append('../TL')
 # 环境检测包
 from tl import IN_BACKTEST
 
-# IN_BACKTEST=False
-
 # 判断运行环境
 if IN_BACKTEST:
     # 策略环境
@@ -46,8 +39,7 @@ if IN_BACKTEST:
     print('数据引擎：运行于策略')
 else:
     # 研究环境
-    print("数据引擎：运行于研究")
-
+    print("数据引擎：准备好")
 
 
 class Sqlite(object):
@@ -86,7 +78,7 @@ class Sqlite(object):
             # 生成数据库副本连接
             connect = create_engine('sqlite:///%s' % temp_file)
         return connect
-    
+
     def restore(self):
         """
         功能：策略中，策略结束前恢复数据库
@@ -218,7 +210,6 @@ class _Cvs_Research(object):
     def __init__(self, path=''):
         # 文件路径
         self.__path = path
-  
 
     def read(self, name, cols=None, parse_dates=False, encoding=None):
         """
@@ -230,14 +221,26 @@ class _Cvs_Research(object):
         返回：数据表，dataframe
         """
         # 使用cols时，默认不包括index列，所以必须加上index列
-        cols = None if cols is None else [0] + cols
-        
+        # python3环境下，列表中不允许数字和字符串同时出现，所以出错
+        # usecols = None if cols is None else [0] + cols
+
         # 读取cvs文件
-        df = pd.read_csv('%s%s.csv' % (self.__path, name),
-                         usecols=cols,
-                         index_col=0,
-                         parse_dates=parse_dates,
-                         encoding=encoding)
+        # df = pd.read_csv('%s%s.csv' % (self.__path, name),
+        #                  usecols=usecols,
+        #                  index_col=0,
+        #                  parse_dates=parse_dates,
+        #                  encoding=encoding)
+        # cols不为空时，只能读取所有列，然后再取指定列
+        if cols is None:
+            df = pd.read_csv('%s%s.csv' % (self.__path, name),
+                             index_col=0,
+                             parse_dates=parse_dates,
+                             encoding=encoding)
+        else:
+            df = pd.read_csv('%s%s.csv' % (self.__path, name),
+                             index_col=0,
+                             parse_dates=parse_dates,
+                             encoding=encoding)[cols]
         # 返回数据表
         return df
 
@@ -382,6 +385,6 @@ class Image_Backtest(object):
 
 
 # 根据运行环境初始化Cvs、Pickle、Image
-Csv = _Cvs_Research# _Cvs_Backtest if IN_BACKTEST else _Cvs_Research
+Csv = _Cvs_Research  # _Cvs_Backtest if IN_BACKTEST else _Cvs_Research
 Pickle = _Pickle_Backtest if IN_BACKTEST else _Pickle_Research
 Image = Image_Backtest if IN_BACKTEST else Image_Research

@@ -7,9 +7,7 @@ from datetime import timedelta, date, datetime
 
 from IPython.display import display
 from ipywidgets import *
-from IPython.display import display
-# import qgrid
-# qgrid.enable()
+
 
 
 class TView(object):
@@ -91,7 +89,7 @@ class TView(object):
     _freq = [u'频率分布', u'无']
     _high = [u'高度对比', u'无']
     _line = [u'高度线', u'无']
-    _period = [u'周线', u'日线', u'月线']
+    _period = [ u'日线',u'周线', u'月线']
     _y10 = [u'十年期国债市盈率', u'无']
     _sort2 = [u'高度', u'当前值']
     _sort_type = [u'升序', u'降序']
@@ -122,14 +120,14 @@ class TView(object):
                                                      height='60px'),
                                        margin=4,
                                        options=_code,
-                                       value=_code.values()[0])
+                                       value=list(_code.values())[0])
         #对比指数
         widgets_code2 = widgets.Select(description=u'对比',
                                        layout=Layout(width='240px',
                                                      height='60px'),
                                        margin=4,
                                        options=_compare,
-                                       value=_compare.values()[0])
+                                       value=list(_compare.values())[0])
         #估值
         widgets_item = widgets.Dropdown(description=u'指标',
                                         layout=Layout(width='240px'),
@@ -502,7 +500,7 @@ class TView(object):
                                       layout=Layout(height='92px'),
                                       margin=4,
                                       options=_code,
-                                      value=_code.values()[0])
+                                      value=list(_code.values())[0])
         #估值
         widgets_item = widgets.Dropdown(description=u'指标',
                                         layout=Layout(width='344px'),
@@ -606,7 +604,7 @@ class TView(object):
                                               height=75,
                                               rows=3,
                                               options=_code,
-                                              value=[_code.values()[0]])
+                                              value=[list(_code.values())[0]])
         #估值
         widgets_item = widgets.Dropdown(description=u'指标',
                                         width=80,

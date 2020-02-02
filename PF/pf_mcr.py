@@ -27,6 +27,10 @@ from datetime import timedelta,date,datetime
 
 
 #导入自定义包
+import sys
+sys.path.append("../DS")
+sys.path.append("../TL")
+
 from tl import IN_BACKTEST
 from pf import *
 from ds import dsMcr
@@ -37,9 +41,10 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg') 
-    print '宏观框架：运行于策略'
+    # print '宏观框架：运行于策略'
 else:
-    print '宏观框架：运行于研究'
+    pass
+    # print '宏观框架：运行于研究'
     
 import matplotlib.pyplot as plt
 

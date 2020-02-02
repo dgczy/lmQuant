@@ -1,29 +1,43 @@
 # -*- coding: utf-8 -*-
 
-
 # 获取中证指数官网数据
 
-
 # 导入库
-import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from datetime import timedelta, date, time, datetime
-
-import jqdatasdk
+from datetime import timedelta, datetime
 
 from jqdatasdk import get_trade_days
 
 _url_base = 'http://www.csindex.com.cn/zh-CN/downloads/industry-price-earnings-ratio?'
 
-_codes = {'SHA': {'name': '上海A股', 'position': 1},
-          'SZA': {'name': '深圳A股', 'position': 9},
-          'HSA': {'name': '沪深A股', 'position': 17},
-          'SZB': {'name': '深市主板', 'position': 25},
-          'ZXB': {'name': '中小板', 'position': 33},
-          'CYB': {'name': '创业板', 'position': 41},
-          }
+_codes = {
+    'SHA': {
+        'name': '上海A股',
+        'position': 1
+    },
+    'SZA': {
+        'name': '深圳A股',
+        'position': 9
+    },
+    'HSA': {
+        'name': '沪深A股',
+        'position': 17
+    },
+    'SZB': {
+        'name': '深市主板',
+        'position': 25
+    },
+    'ZXB': {
+        'name': '中小板',
+        'position': 33
+    },
+    'CYB': {
+        'name': '创业板',
+        'position': 41
+    },
+}
 
 _start_date = '2011-05-02'
 
@@ -40,7 +54,6 @@ class Plate(object):
     板块市净率,包括：最新市净率、股票家数、其中亏损家数、平均市净率
     板块股息率,包括：最新股息率、股票家数、其中亏损家数、平均滚动股息率
     """
-
     @staticmethod
     def hist_data(code, start_date=None, end_date=None):
         jqdatasdk.auth("13695683829", "ssk741212")
@@ -73,12 +86,9 @@ class Plate(object):
                 yield [day] + datas
 
         # 组织数据（迭代数据生成器）
-        df = pd.DataFrame(data=[item for item in data_list()], columns=['date', 'pe', 'pb', 'dyr'])
+        df = pd.DataFrame(data=[item for item in data_list()],
+                          columns=['date', 'pe', 'pb', 'dyr'])
         df.set_index('date', inplace=True)
         df.index.name = None
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d')
         return df.astype('float')
-
-
-df=Plate.hist_data("SHA")
-print(df)
