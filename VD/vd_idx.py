@@ -16,16 +16,23 @@ class idxView(TView):
 
         # 项目
         self._code = {
-            u'A股指数': self.__project.pool.hs.keys(),
-            u'A股主要宽基指数': self.__project.pool.qsc.keys(),
-                # self.__project.pool.kj.keys()
-            
-            u'A股主要窄基指数': self.__project.pool.zj.keys(),
-            u'港股指数': self.__project.pool.hk.keys(),
-            u'美股指数': self.__project.pool.us.keys(),
-            u'海外市场指数': self.__project.pool.hw.keys(),
-            u'主要跟踪指数': self.__project.pool.watch.keys(),
-            u'全部指数': self.__project.pool.track.keys()
+            u'A股指数':
+            self.__project.pool.hs.keys(),
+            u'A股主要宽基指数':
+            list(self.__project.pool.qsc.keys()) +
+            list(self.__project.pool.kj.keys()),
+            u'A股主要窄基指数':
+            self.__project.pool.zj.keys(),
+            u'港股指数':
+            self.__project.pool.hk.keys(),
+            u'美股指数':
+            self.__project.pool.us.keys(),
+            u'海外市场指数':
+            self.__project.pool.hw.keys(),
+            u'主要跟踪指数':
+            self.__project.pool.watch.keys(),
+            u'全部指数':
+            self.__project.pool.track.keys()
         }
 
         self._code_hs = {
