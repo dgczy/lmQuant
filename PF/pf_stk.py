@@ -51,7 +51,7 @@ def is_cyb(code):
 
 #判断年报是否已出
 def is_report(code, stat_year=2017):
-    q = query(indicator.inc_return, ).filter(indicator.code == code)
+    q = jqdatasdk.query(indicator.inc_return, ).filter(indicator.code == code)
     return len(get_fundamentals(q, statDate=str(stat_year))) > 0
 
 
@@ -66,7 +66,7 @@ def get_stock_industry(code, date=pd.datetime.today()):
 
 #获取pe、pb、ps、自由流通市值
 def get_stock_valuation(code):
-    q = query(
+    q = jqdatasdk.query(
         valuation.pe_ratio,
         valuation.pb_ratio,
         valuation.ps_ratio,
@@ -83,8 +83,8 @@ def get_stock_valuation(code):
 #stat_year：年报截至年份，如：2017
 #max_year：统计年数，如：5，即向前统计5年
 #calc_year：计算年数，如：3，即向前计算3年
-def get_stock_indicator(code, stat_year=2017, max_year=5, calc_year=5):
-    q = query(
+def get_stock_indicator(code, stat_year=2018, max_year=5, calc_year=5):
+    q = jqdatasdk.query(
         indicator.code,
         indicator.inc_revenue_year_on_year,
         indicator.inc_net_profit_year_on_year,
@@ -117,7 +117,7 @@ def get_stock_indicator(code, stat_year=2017, max_year=5, calc_year=5):
 
 def get_stock_goodwill(code, stat_date):
     #查询资产负债表、利润表
-    q = query(
+    q = jqdatasdk.query(
         balance.code,
         balance.good_will,  #商誉
         balance.total_assets,  #总资产
@@ -144,8 +144,8 @@ def get_stock_goodwill(code, stat_date):
         return (None, None, None, None)
 
 
-def get_bank_stock_indicator(code, date=2017):
-    q = query(
+def get_bank_stock_indicator(code, date=2018):
+    q = jqdatasdk.query(
         bank_indicator.code,
         bank_indicator.net_interest_margin,
         bank_indicator.core_level_capital_adequacy_ratio,
@@ -254,13 +254,15 @@ class _Data(Tdata):
         elif code.endswith('XSHE'):
             return '%s_sz_%s' % (self.project.id, code[0:6])
 
-    #计算PE、PB等数据
+    # 计算PE、PB等数据
     def get_oneday(self, code, date):
-        #获取财务信息
-        q = query(valuation).filter(valuation.code == code)
+        # 获取财务信息
+        q = jqdatasdk.query(valuation).filter(valuation.code == code)
+
         df = get_fundamentals(q, date)
+
         if len(df) > 0:
-            #股息率、市值
+            # 股息率、市值
             dyr, cap = get_divid(code, date)
             return (round(df.pe_ratio.iloc[-1],
                           2), round(df.pb_ratio.iloc[-1],
@@ -272,16 +274,16 @@ class _Data(Tdata):
             return (float('NaN'), float('NaN'), float('NaN'), float('NaN'),
                     float('NaN'), float('NaN'), float('NaN'))
 
-    #计算pe、pb、roe、点位数据
+    # 计算pe、pb、roe、点位数据
     def get_data(self, code, start_date=None, end_date=None):
-        #只计算2005年以来的数据
+        # 只计算2005年以来的数据
         if start_date is None:
             start_date = dsStk.info(code).start_date
             if start_date < '2005-01-04':
                 start_date = '2005-01-04'
         if end_date is None:
             end_date = pd.datetime.today() - timedelta(1)
-        #获取点位
+        # 获取点位
         price_df = dsStk.hist(code,
                               start_date=start_date,
                               end_date=end_date,
@@ -289,22 +291,25 @@ class _Data(Tdata):
                                   'open', 'close', 'low', 'high', 'pre_close',
                                   'volume', 'money'
                               ])
+
         date_list = price_df.index.tolist()
         valuation_list = []
-
         for d in date_list:
+
             print('\r数据更新：%s %s %s' %
-                  (code[0:6], self.pool.track[code], d.strftime('%Y年%m月%d日')),
+                  (code[0:6], self.pool.track[code], d.strftime('%Y-%m-%d')),
                   end="")
-            #获取估值数据
-            data = self.get_oneday(code, d)
+            # 获取估值数据
+            data = self.get_oneday(code, d.strftime('%Y-%m-%d'))
             valuation_list.append(data)
+
         #组织数据
         valuation_df = pd.DataFrame(
             data=valuation_list,
             index=date_list,
             columns=['pe', 'pb', 'ps', 'pcf', 'roe', 'dyr', 'cap'])
         df = pd.concat([valuation_df, price_df], axis=1)
+
         return df
 
 

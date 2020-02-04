@@ -23,6 +23,11 @@ try:
 except:
     pass
 
+# 聚宽数据
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
+from jqdatasdk import *
+
 # 日期时间
 import time
 from datetime import timedelta

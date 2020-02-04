@@ -21,6 +21,10 @@ import math
 import time
 from datetime import timedelta, date, datetime
 
+# 聚宽数据
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
+from jqdatasdk import *
 
 import sys
 sys.path.append("../DS")
@@ -244,8 +248,8 @@ class _Data(Tdata):
         valuation_list = []
         for d in date_list:
             print ('\r数据更新：%s %s' % (self.pool.track[code],
-                                    d.strftime('%Y-%m-%日')),end="")
-            valuation_list.append(self.__get_hs_day(code, d))
+                                    d.strftime('%Y-%m-%')),end="")
+            valuation_list.append(self.__get_hs_day(code, d.strftime('%Y-%m-%')))
         print ('\r',end="")
 
         # 生成估值数据表

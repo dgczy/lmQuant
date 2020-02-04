@@ -88,8 +88,9 @@ class Ced(object):
         today_str=datetime.now().date().strftime(date_format)
 
         # 约束开始日期
-        if start_date>today_str:
-            return None
+        if not start_date is None:
+            if start_date> today_str:
+                return None
 
         # 约束结束日期
         if end_date is None or end_date>today_str:

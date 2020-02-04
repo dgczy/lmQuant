@@ -278,7 +278,7 @@ class Tdata(object):
                 # 本次更新日期
                 clac_date = (update_date + timedelta(1)).strftime('%Y-%m-%d')
                 # 本次更新日期大于最近交易日期，则无需更新
-                if clac_date > trade_date:
+                if clac_date > trade_date[0:10]:
                     continue
                 # 增量获取
                 df = self.get_data(code, start_date=clac_date)
@@ -290,7 +290,7 @@ class Tdata(object):
                 # 初次获取
                 df = self.get_data(code)
             except Exception as e:
-                # print '%s：%s'%(self.pool.name(code),e)
+                print('%s：%s'%(self.pool.name(code),e))
                 continue
 
             if not df is None:

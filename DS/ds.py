@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 
+import pandas as pd
+
 try:
     # 策略中必须导入kuanke.user_space_api包
     from kuanke.user_space_api import *
@@ -133,11 +135,13 @@ class _CMS(_TData):
             # 今天日期
             end_date = datetime.now().date().strftime('%Y-%m-%d')
         # 历史行情（聚宽数据）
-        return get_price(cls.__convert_code(code),
+        df=get_price(cls.__convert_code(code),
                          start_date=start_date,
                          end_date=end_date,
                          frequency='daily',
                          fields=fields)
+        # df.index=pd.to_datetime(df.index, format='%Y-%m-%d')
+        return df
 
     @classmethod
     def info(cls, code):
