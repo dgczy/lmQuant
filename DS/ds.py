@@ -1,7 +1,5 @@
 # -*- coding:utf-8 -*-
 
-import pandas as pd
-
 try:
     # 策略中必须导入kuanke.user_space_api包
     from kuanke.user_space_api import *
@@ -9,23 +7,24 @@ except:
     pass
 
 # 日期时间
-from datetime import  datetime
+from datetime import timedelta, date, datetime
 
 # 聚宽数据
 import jqdatasdk
 jqdatasdk.auth("13695683829", "ssk741212")
 from jqdatasdk import *
 
-
 # 各类数据源
 from ds_hsi import Hsi
 from ds_wall import Wall
+from ds_gidx import GIDX
 from ds_xueqiu import Xueqiu
 from ds_multpl import Spx
 from ds_sws import Sws
 from ds_sina import Sina
 from ds_east import Ced, Shibor
 from ds_csindex import Plate
+from ds_invest import Invest
 
 
 class _TInfo(object):
@@ -135,13 +134,11 @@ class _CMS(_TData):
             # 今天日期
             end_date = datetime.now().date().strftime('%Y-%m-%d')
         # 历史行情（聚宽数据）
-        df=get_price(cls.__convert_code(code),
+        return get_price(cls.__convert_code(code),
                          start_date=start_date,
                          end_date=end_date,
                          frequency='daily',
                          fields=fields)
-        # df.index=pd.to_datetime(df.index, format='%Y-%m-%d')
-        return df
 
     @classmethod
     def info(cls, code):
@@ -225,7 +222,7 @@ class _HMI(_TData):
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # 雪球官网数据
-        df = Xueqiu.hist_price(code, start_date)
+        df = GIDX.hist_price(code, start_date)
         if df is None:
             return None
         # 恒生官网数据
@@ -264,7 +261,7 @@ class _SPX(_TData):
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # price（雪球官网数据）
-        df = Xueqiu.hist_price(code, start_date)
+        df = GIDX.hist_price(code, start_date)
         if df is None:
             return None
         # pe（multpl网站月线数据）
@@ -337,11 +334,13 @@ class _OMI(_TData):
 
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
-        # 华尔街见闻网站数据
+        # 聚宽及英为财情数据
         try:
-            return Wall.hist_price(code, start_date, end_date)
+            return GIDX.hist_price(code, start_date, end_date)
         except Exception as e:
-            print('%s：%s' % ("华尔街见闻网站数据", e))
+            return Invest.hist_price(code, start_date, end_date)
+        except Exception as e:
+            print('%s：%s' % ("错误", e))
             return None
 
     @classmethod
@@ -396,11 +395,11 @@ class _MCR(_TData):
 
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
-        # 华尔街见闻网站数据
+        # 英为财情网站数据
         try:
-            return Wall.hist_price(code, start_date, end_date)
+            return Invest.hist_price(code, start_date, end_date)
         except Exception as e:
-            print('%s：%s' % ("华尔街见闻网站数据", e))
+            print('%s：%s' % ("错误", e))
             return None
 
     @classmethod

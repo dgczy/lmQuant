@@ -42,9 +42,9 @@ import matplotlib
 if IN_BACKTEST:
     #策略中绘图必须使用Agg模式（即不显示图形）
     matplotlib.use('Agg')
-    print ('指数框架：运行于策略')
+    print('指数框架：运行于策略')
 else:
-    print ('指数框架：运行于研究')
+    print('指数框架：运行于研究')
 
 import matplotlib.pyplot as plt
 
@@ -60,19 +60,19 @@ class Fields(TField):
     Fields类，字段、名称对照
     """
 
-    #价格字段
+    # 价格字段
     price = ['open', 'close', 'low', 'high', 'pre_close', 'volume', 'money']
 
-    #估值字段
+    # 估值字段
     val = [
         'pe_e', 'pb_e', 'ps_e', 'pe_w', 'pb_w', 'ps_w', 'pe_m', 'pb_m', 'ps_m',
         'pe_a', 'pb_a', 'ps_a', 'roe', 'dyr'
     ]
 
-    #财务指标字段
+    # 财务指标字段
     finance = ['cap']
 
-    #所有字段
+    # 所有字段
     all = val + finance + price
 
 
@@ -107,7 +107,7 @@ class _Pool(TPool):
             for i in range(len(df))
         ]
         del df['code']
-        #生成列表
+        # 生成列表
         self.to_track(df)
         # 调用父类方法保存:
         TPool.save(self, df)
@@ -165,11 +165,12 @@ class _Data(Tdata):
         """
         沪深指数某日估值
         code：指数代码
-        end_date；截至日期        
+        end_date；截至日期
         """
-        #获取成份股
+        
+        # 获取成份股
         stocks = dsIdx.stocks(code, end_date)
-        #获取成份股财务信息
+        # 获取成份股财务信息
         q = query(
             valuation.pe_ratio,
             valuation.pb_ratio,
@@ -177,14 +178,15 @@ class _Data(Tdata):
             valuation.circulating_market_cap,
         ).filter(valuation.code.in_(stocks))
         df = get_fundamentals(q, end_date)
+        
         if len(df) == 0:
             return (None, None, None, None, None, None, None, None, None, None,
                     None, None, None, None, None)
-        #样本数
+        # 样本数
         n = len(df)
-        #加权pe、pb、ps
-        #所有股票流通总市值/所有股票税后利润
-        #pe_ratio、pb_ratio、ps_ratio剔除零值
+        # 加权pe、pb、ps
+        # 所有股票流通总市值/所有股票税后利润
+        # pe_ratio、pb_ratio、ps_ratio剔除零值
         cmc = df['circulating_market_cap'].sum()
         pe_w = cmc / (df['circulating_market_cap'] /
                       df['pe_ratio'][df['pe_ratio'] != 0]).sum()
@@ -192,30 +194,31 @@ class _Data(Tdata):
                       df['pb_ratio'][df['pb_ratio'] != 0]).sum()
         ps_w = cmc / (df['circulating_market_cap'] /
                       df['ps_ratio'][df['ps_ratio'] != 0]).sum()
-        #中位数pe、pb、ps
-        #排序、取中值
-        #pe_ratio、pb_ratio、ps_ratio负值视作零值
+        # 中位数pe、pb、ps
+        # 排序、取中值
+        # pe_ratio、pb_ratio、ps_ratio负值视作零值
         pe_m = np.median(sorted([p if p > 0 else 0 for p in df['pe_ratio']]))
         pb_m = np.median(sorted([p if p > 0 else 0 for p in df['pb_ratio']]))
         ps_m = np.median(sorted([p if p > 0 else 0 for p in df['ps_ratio']]))
-        #等权pe、pb、ps
-        #pe_ratio、pb_ratio、ps_ratio负值视作零值
+        # 等权pe、pb、ps
+        # pe_ratio、pb_ratio、ps_ratio负值视作零值
         pe_e = n / sum([1 / p if p > 0 else 0 for p in df['pe_ratio']])
         pb_e = n / sum([1 / p if p > 0 else 0 for p in df['pb_ratio']])
         ps_e = n / sum([1 / p if p > 0 else 0 for p in df['ps_ratio']])
-        #算数平均pe、pb、ps
-        #剔除负值、剔除极值
+        # 算数平均pe、pb、ps
+        # 剔除负值、剔除极值
         pe_df = data_del_IQR(df['pe_ratio'], k=0.734)
         pb_df = data_del_IQR(df['pb_ratio'], k=0.734)
         ps_df = data_del_IQR(df['ps_ratio'], k=0.734)
         pe_a = pe_df.sum() / n
         pb_a = pb_df.sum() / n
         ps_a = ps_df.sum() / n
-        #roe，加权pb除以加权pe
+        # roe，加权pb除以加权pe
         roe = pb_w / pe_w * 100 if pe_w > 0 else float(np.NaN)
-        #股息率、市值
-        dyr, cap = get_divid(dsIdx.stocks(code, end_date), end_date)
-        #返回数据
+        # 股息率、市值
+        (dyr, cap )= get_divid(dsIdx.stocks(code, end_date), end_date)
+        
+        # 返回数据
         return (round(pe_e, 2), round(pb_e, 2), round(ps_e, 2), round(pe_w, 2),
                 round(pb_w, 2), round(ps_w, 2), round(pe_m, 2), round(pb_m, 2),
                 round(ps_m, 2), round(pe_a, 2), round(pb_a, 2), round(ps_a, 2),
@@ -226,7 +229,7 @@ class _Data(Tdata):
         计算沪深指数历史数据
         code：指数代码
         start_date；开始日期
-        end_date；截至日期        
+        end_date；截至日期
         """
         # 日期约束
         if start_date is None:
@@ -236,21 +239,26 @@ class _Data(Tdata):
         if end_date is None:
             end_date = pd.datetime.today() - timedelta(1)
 
-        #获取行情数据
+        # 获取行情数据
         price_df = dsIdx.hist(code,
                               start_date=start_date,
                               end_date=end_date,
                               fields=Fields.price)
 
-        #生成交易日期
+        # 生成交易日期
         date_list = price_df.index.tolist()
+        # print(date_list)
+        # print(d.strftime('%Y-%m-%'))
         # 获取估值数据
         valuation_list = []
         for d in date_list:
-            print ('\r数据更新：%s %s' % (self.pool.track[code],
-                                    d.strftime('%Y-%m-%')),end="")
-            valuation_list.append(self.__get_hs_day(code, d.strftime('%Y-%m-%')))
-        print ('\r',end="")
+            print(d)
+            print('\r数据更新：%s %s' %
+                  (self.pool.track[code], d),
+                  end="")
+            valuation_list.append(
+                self.__get_hs_day(code, d.strftime('%Y-%m-%')))
+        print('\r', end="")
 
         # 生成估值数据表
         valuation_df = pd.DataFrame(data=valuation_list,
@@ -266,7 +274,7 @@ class _Data(Tdata):
         获取海外指数历史数据
         code：指数代码
         start_date；开始日期
-        end_date；截至日期        
+        end_date；截至日期
         """
         try:
             # 获取数据
@@ -281,14 +289,14 @@ class _Data(Tdata):
             return df
         except Exception as e:
             print('%s' % e)
-            print ('\r数据更新：%s 失败' % self.pool.track[code],end="")
+            print('\r数据更新：%s 失败' % self.pool.track[code], end="")
 
     def get_data(self, code, start_date=None, end_date=None):
         """
         获取历史数据
         code：指数代码
         start_date；开始日期
-        end_date；截至日期        
+        end_date；截至日期
         """
         if code in self.pool.hs:
             df = self.__get_hs(code, start_date, end_date)
@@ -384,42 +392,42 @@ class _Chart(Tchart):
         period：线型
         y10：十年期国债市盈率
         """
-        #item名称
+        # item名称
         item_name = Fields.label[item]
-        #算法名称
+        # 算法名称
         mode_name = '' if mode == '' else Fields.label[mode] + ' '
-        #字段修正
+        # 字段修正
         item = item if mode == '' else '%s_%s' % (item, mode)
         right = 'close'
-        #读取数据
+        # 读取数据
         df = self.data.read(code1, years=years, items=[item], period='D')
-        #对比指数点位
+        # 对比指数点位
         r_df = self.data.read(code2, years=years, items=[right], period='D')
         df[right] = r_df[right]
-        #获取数据分析表数据
+        # 获取数据分析表数据
         table = self.analyse.read(years)
-        #当前值
+        # 当前值
         item_val = table.ix[code1, item]
-        #百分位
+        # 百分位
         item_ratio = table.ix[code1, item + '_ratio']
-        #图例名称
+        # 图例名称
         item_legend = [u'%s %.2f %.2f%%' % (item_name, item_val, item_ratio)]
-        #十年期国债市盈率
+        # 十年期国债市盈率
         if y10:
             df_10y = self.data.read(_C10Y, items=['pe'], years=years)
             df['c10y'] = df_10y['pe']
             item_legend += [
                 u'%s %.2f' % (Fields.label[_C10Y], df['c10y'].iloc[-1])
             ]
-        #转换数据
+        # 转换数据
         df = data_to_period(df, period)
-        #标题
+        # 标题
         title = [(u'%s%s-%s对比') %
                  (self.pool.track[code1], item_name, self.pool.track[code2]),
                  (u'%s%s %s  %s') %
                  (mode_name, Fields.label[years], Fields.label[period],
                   df.index[-1].strftime(u'%Y-%m-%d'))]
-        #画线
+        # 画线
         ax = df.plot(figsize=(18, 8),
                      secondary_y=[right],
                      fontsize=12.5,
@@ -428,31 +436,31 @@ class _Chart(Tchart):
                      mark_right=False,
                      rot=0,
                      style=['b', 'orange', 'r'])
-        #设置标题
+        # 设置标题
         self.set_title(ax, title)
-        #设置Y轴标题
+        # 设置Y轴标题
         self.set_ylabel(ax, '%s %s' % (self.pool.track[code1], item_name))
-        #设置图例
+        # 设置图例
         self.set_legend(ax, item_legend, 2, 8)
-        #设置网格线
+        # 设置网格线
         self.set_grid(ax)
-        #美化边框、刻度
+        # 美化边框、刻度
         self.set_left(ax)
-        #获取画板和r_ax
+        # 获取画板和r_ax
         fig = ax.get_figure()
         if right != '':
             r_ax = fig.get_axes()[1]
-            #设置Y轴标题
+            # 设置Y轴标题
             self.set_ylabel(r_ax, self.pool.track[code2])
-            #图例
+            # 图例
             r_legend = [
                 u'%s %s %.2f' % (self.pool.track[code2], Fields.label[right],
                                  df[right].iloc[-1])
             ]
             self.set_legend(r_ax, r_legend, 1)
-            #边框、刻度
+            # 边框、刻度
             self.set_right(r_ax)
-        #返回figure对象
+        # 返回figure对象
         return fig
 
     def line_mode(self, code, item='pe', years=10, right='close', period='W'):
@@ -464,31 +472,31 @@ class _Chart(Tchart):
         right：右轴对比，close、cap对应收盘点位、市值，为空时表示关闭对比
         period：线型
         """
-        #item名称
+        # item名称
         item_name = Fields.label[item]
-        #字段列表
+        # 字段列表
         item_list = [item + '_e', item + '_w', item + '_a', item + '_m']
         if right != '':
             item_list += [right]
-        #获取数据，并转换为周数据
+        # 获取数据，并转换为周数据
         df = self.data.read(code, years=years, items=item_list, period=period)
-        #最新值
+        # 最新值
         item_e = df[item + '_e'].iloc[-1]
         item_w = df[item + '_w'].iloc[-1]
         item_m = df[item + '_m'].iloc[-1]
         item_a = df[item + '_a'].iloc[-1]
-        #图表标题
+        # 图表标题
         title = [(u'%s-%s算法对比') % (self.pool.track[code], item_name),
                  (u'%s %s  %s') % (Fields.label[years], Fields.label[period],
                                    df.index[-1].strftime('%Y-%m-%d'))]
-        #图例列表
+        # 图例列表
         item_legend = [
             '等权平均值 %.2f' % item_e,
             '加权平均值 %.2f' % item_w,
             '算数平均值 %.2f' % item_a,
             '中位数%.2f' % item_m
         ]
-        #画图，收盘点位在Y轴右侧
+        # 画图，收盘点位在Y轴右侧
         ax = df.plot(figsize=(18, 8),
                      secondary_y=[right],
                      fontsize=12.5,
@@ -497,29 +505,29 @@ class _Chart(Tchart):
                      mark_right=False,
                      rot=0,
                      style=['b', 'm', 'g', 'c', 'orange'])
-        #设置标题
+        # 设置标题
         self.set_title(ax, title)
-        #设置Y轴标题
+        # 设置Y轴标题
         self.set_ylabel(ax, item_name)
-        #设置图例
+        # 设置图例
         self.set_legend(ax, item_legend, 2, 4)
-        #设置网格线
+        # 设置网格线
         self.set_grid(ax)
-        #美化边框、刻度
+        # 美化边框、刻度
         self.set_left(ax)
-        #获取画板和r_ax
+        # 获取画板和r_ax
         fig = ax.get_figure()
         if right != '':
             r_ax = fig.get_axes()[1]
-            #y轴标题
+            # y轴标题
             r_ylabel = Fields.label[right]
-            #图例标题
+            # 图例标题
             r_legend = [u'%s %.2f' % (r_ylabel, df[right].iloc[-1])]
-            #设置Y轴标题
+            # 设置Y轴标题
             self.set_ylabel(r_ax, r_ylabel)
-            #设置图例
+            # 设置图例
             self.set_legend(r_ax, r_legend, 1)
-            #美化边框、刻度
+            # 美化边框、刻度
             self.set_right(r_ax)
         return fig
 
@@ -530,25 +538,25 @@ class _Chart(Tchart):
         start_date:原图数据起始日期
         style：线型
         """
-        #创建右侧Y轴
+        # 创建右侧Y轴
         ax = fig.get_axes()[0]
         r_ax = ax.twinx()
-        #获取十年期国债数据
+        # 获取十年期国债数据
         df = self.data.read(_C10Y, items=['pe'], start_date=start_date)
-        #国债市盈率折线图
+        # 国债市盈率折线图
         df.plot(ax=r_ax, grid=True, linewidth=3.0, rot=0, style=style)
-        #设置网格
+        # 设置网格
         r_ax.grid(False)
-        #获取原图的左侧Y轴ticks，设置新图右侧Y轴刻度
+        # 获取原图的左侧Y轴ticks，设置新图右侧Y轴刻度
         ticks = ax.get_yticks()
         r_ax.set_yticks(ticks)
-        #Y轴标题
+        # Y轴标题
         r_ylabel = Fields.label[_C10Y]
-        #设置Y轴标题
+        # 设置Y轴标题
         self.set_ylabel(r_ax, r_ylabel)
-        #设置图例
+        # 设置图例
         self.set_legend(r_ax, [r_ylabel], 1)
-        #美化边框、刻度
+        # 美化边框、刻度
         self.set_right(r_ax)
 
 
@@ -606,7 +614,7 @@ class Index(object):
 
 class IdxChg(object):
     """
-    指数行情类 
+    指数行情类
     data_name：'cvs'表示使用文件引擎，其它表示数据库文件名,使用数据库引擎
     data_path：文件路径或数据库路径
     project_name：项目名称
@@ -635,7 +643,7 @@ class IdxChg(object):
 
 class IdxVal(object):
     """
-    指数估值类 
+    指数估值类
     data_name：'cvs'表示使用文件引擎，其它表示数据库文件名,使用数据库引擎
     data_path：文件路径或数据库路径
     project_name：项目名称

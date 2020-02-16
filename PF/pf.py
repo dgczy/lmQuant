@@ -7,6 +7,8 @@ import math
 import os
 
 # 聚源数据、交易日
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
 from jqdatasdk import get_trade_days
 
 import sys

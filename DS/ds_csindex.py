@@ -8,6 +8,9 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import timedelta, datetime
 
+# 聚宽数据
+import jqdatasdk
+jqdatasdk.auth("13695683829", "ssk741212")
 from jqdatasdk import get_trade_days
 
 _url_base = 'http://www.csindex.com.cn/zh-CN/downloads/industry-price-earnings-ratio?'
