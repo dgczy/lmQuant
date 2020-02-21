@@ -17,16 +17,7 @@ import pandas as pd
 import math
 import os
 
-try:
-    # 聚源数据、交易日
-    from jqdata import jy
-except:
-    pass
 
-# 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import *
 
 # 日期时间
 import time
@@ -34,34 +25,15 @@ from datetime import timedelta
 
 IN_BACKTEST = False
 
-# IN_BACKTEST = not (os.environ.get("JUPYTERHUB_API_TOKEN") or os.environ.get("JPY_API_TOKEN"))
 
 
 # 检测文件
-def exists_file_in_research(file_name):
+def exists_file(file_name):
     """
     研究中检测文件，使用os.path.exists函数
     file_name：文件名、含路径，str
     """
     return os.path.exists(file_name)
-
-
-# 检测文件
-def exists_file_in_backtest(file_name):
-    """
-    策略中检测文件，使用read_file函数
-    file_name：文件名、含路径，str
-    """
-    try:
-        # 尝试读取文件，成功则文件存在
-        read_file(file_name)
-        return True
-    except:
-        # 出现错误，则文件不存在
-        return False
-
-
-exists_file = exists_file_in_backtest if IN_BACKTEST else exists_file_in_research
 
 
 def get_volatility(df, years=None, days=30):
@@ -121,150 +93,6 @@ def get_annualized(df, years=5):
     return round(annualized, 2)
 
 
-def get_jq_divid(code, end_date):
-    """
-    指定日期股息率,jqdata版本
-    code：股票代码,list or str
-    end_date：截至日期
-    返回：股息率、市值
-    """
-    # 判断代码是str还是list
-    if not type(code) is list:
-        code = [code]
-
-    # 获取所有成份股派息总额
-    # 数据表
-    df = pd.DataFrame()
-    # 因jqdata每次最多返回5000条数据，所以要多次查询
-    # 偏移值
-    offset = 0
-    while True:
-        #查询语句
-        q = query(
-            # 代码
-            finance.STK_XR_XD.code,
-            # 派息日期
-            finance.STK_XR_XD.report_date,
-            # 派息总额
-            finance.STK_XR_XD.bonus_amount_rmb,
-        ).filter(
-            # 获取指定日期前所有分红
-            finance.STK_XR_XD.report_date <= end_date,
-            finance.STK_XR_XD.code.in_(code)
-            # 偏移
-        ).offset(offset)
-        # 查询
-        temp_df = finance.run_query(q)
-        # 判断是否还有数据了
-        if len(temp_df) == 0:
-            break
-        # 追加数据
-        df = df.append(temp_df)
-        # 偏 移值每次递增5000
-        offset += 5000
-
-    if len(df) == 0:
-        div = float('NaN')
-    else:
-        # 生成排序字段
-        df['sort'] = df['code'].astype('str') + df['report_date'].astype(
-            'str').str[0:10]
-        df = df.sort_values('sort')
-        # 只保留最后一次派息数据
-        df = df.drop_duplicates('code', keep='last')
-        # 返回合计的派息数
-        div = df['bonus_amount_rmb'].sum()
-
-    # 获取指数总市值
-    q = query(
-        # 市值
-        valuation.market_cap).filter(valuation.code.in_(code))
-    # 获取各成份股市值(亿元)
-    df = get_fundamentals(q, end_date)
-    # 返回合计的成份股总市值（亿元）
-    cap = df['market_cap'].sum()
-
-    try:
-        # 返回股息率
-        return div / cap / 10000 * 100.0, cap
-    except:
-        return float('NaN'), float('NaN')
-
-
-def get_jy_divid(code, end_date):
-    """
-    指定日期股息率,jy版本
-    code：股票代码,list or str
-    end_date：截至日期
-    返回：股息率、市值
-    """
-    # 判断代码是str还是list
-    if not type(code) is list:
-        code = [code]
-
-    # 聚宽代码转换为jy内部代码
-    InnerCodes = Code.stk_to_jy(code)
-    # 获取所有成份股派息总额
-    # 数据表
-    df = pd.DataFrame()
-    # 因jy每次最多返回3000条数据，所以要多次查询
-    # 偏移值
-    offset = 0
-    while True:
-        # 查询语句
-        q = query(
-            # 内部代码
-            jy.LC_Dividend.InnerCode,
-            # 派息日期
-            jy.LC_Dividend.ToAccountDate,
-            # 派息总额
-            jy.LC_Dividend.TotalCashDiviComRMB,
-        ).filter(
-            # 已分红
-            jy.LC_Dividend.IfDividend == 1,
-            # 获取指定日期前所有分红
-            jy.LC_Dividend.ToAccountDate <= end_date,
-            jy.LC_Dividend.InnerCode.in_(InnerCodes)
-            # 偏移
-        ).offset(offset)
-        # 查询
-        temp_df = jy.run_query(q)
-        if len(temp_df) == 0:
-            break
-        # 追加数据
-        df = df.append(temp_df)
-        # 偏移值每次递增3000
-        offset += 3000
-
-    if len(df) == 0:
-        div = float('NaN')
-    else:
-        # 生成排序字段
-        df['sort'] = df['InnerCode'].astype(
-            'str') + df['ToAccountDate'].astype('str').str[0:10]
-        df = df.sort('sort')
-        # 只保留最后一次派息数据
-        df = df.drop_duplicates('InnerCode', take_last=True)  # keep='last'
-        # 返回合计的派息数
-        div = df['TotalCashDiviComRMB'].sum()
-
-    # 获取指数总市值
-    q = query(
-        # 市值
-        valuation.market_cap).filter(valuation.code.in_(code))
-    # 获取各成份股市值(亿元)
-    df = get_fundamentals(q, end_date)
-    # 返回合计的成份股总市值（亿元）
-    cap = df['market_cap'].sum()
-
-    try:
-        # 返回股息率
-        return div / cap / 100000000 * 100.0, cap
-    except:
-        return float('NaN'), float('NaN')
-
-
-get_divid=get_jq_divid
 
 # 对源数据按照周、月、年筛选
 # period：D、W、M分别为日线、周线、月线
@@ -321,74 +149,3 @@ def date_to_timestamp(date):
 def timestamp_to_date(timestamp):
     return time.strftime('%Y-%m-%d', time.localtime(timestamp))
 
-
-class Code(object):
-    @classmethod
-    def __secu_to_jq(cls, code):
-        if code.endswith('SH'):
-            return code.replace('SH', 'XSHG')
-        if code.endswith('SZ'):
-            return code.replace('SZ', 'XSHE')
-
-    @classmethod
-    def __jq_to_secu(cls, code):
-        if code.endswith('XSHG'):
-            return code.replace('XSHG', 'SH')
-        if code.endswith('XSHE'):
-            return code.replace('XSHE', 'SZ')
-
-    @classmethod
-    def secu_to_jq(cls, code):
-        if type(code) is str:
-            return cls.__secu_to_jq(code)
-        elif type(code) is list:
-            return [cls.__secu_to_jq(item) for item in code]
-
-    @classmethod
-    def jq_to_secu(cls, code):
-        if type(code) is str:
-            return cls.__jq_to_secu(code)
-        elif type(code) is list:
-            return [cls.__jq_to_secu(item) for item in code]
-
-    @classmethod
-    def __secu_to_jy(cls, codes, category=1):
-        df = pd.DataFrame()
-        # 因jy每次最多返回3000条数据，所以要多次查询
-        # 偏移值
-        offset = 0
-        while True:
-            q = query(
-                # 内部代码
-                jy.SecuMain.InnerCode, ).filter(
-                    # 去除聚宽代码后缀
-                    jy.SecuMain.SecuCode.in_(codes),
-                    # 限定查询股票
-                    jy.SecuMain.SecuCategory == category
-                    # 偏移
-                ).offset(offset)
-            # 查询
-            temp_df = jy.run_query(q)
-            # 无数据时退出
-            if len(temp_df) == 0:
-                break
-            # 追加数据
-            df = df.append(temp_df)
-            # 偏移值每次递增3000
-            offset += 3000
-        # 返回代码list
-        return df.InnerCode.tolist()
-
-    @classmethod
-    def idx_to_jy(cls, code):
-        if type(code) is str:
-            return cls.__secu_to_jy([code[0:6]], category=4)[0]
-        elif type(code) is list:
-            return cls.__secu_to_jy([item[0:6] for item in code], category=4)
-
-    @classmethod
-    def stk_to_jy(cls, code):
-        if type(code) is str:
-            return cls.__secu_to_jy([code[0:6]], category=1)[0]
-        elif type(code) is list:
-            return cls.__secu_to_jy([item[0:6] for item in code], category=1)

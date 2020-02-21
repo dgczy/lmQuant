@@ -21,32 +21,21 @@ import math
 import time
 from datetime import timedelta, date, datetime
 
-# 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import *
-
 import sys
-sys.path.append("../DS")
-sys.path.append("../TL")
-sys.path.append('../DM')
+sys.path.append("..\DS")
+sys.path.append("..\TL")
+sys.path.append('..\DM')
 
 # 自定义包
-from tl import IN_BACKTEST, data_to_period, data_del_IQR, get_volatility, get_annualized, get_divid
+from tl import data_to_period, data_del_IQR
 from pf import *
 from ds import dsIdx
 
 #必须依照以下顺序导入、设置matplotlib
 import matplotlib
-
-if IN_BACKTEST:
-    #策略中绘图必须使用Agg模式（即不显示图形）
-    matplotlib.use('Agg')
-    print('指数框架：运行于策略')
-else:
-    print('指数框架：运行于研究')
-
 import matplotlib.pyplot as plt
+
+print('指数框架：运行于研究')
 
 # 标识符
 _ID = 'idx'
@@ -167,7 +156,7 @@ class _Data(Tdata):
         code：指数代码
         end_date；截至日期
         """
-        
+        print(end_date)
         # 获取成份股
         stocks = dsIdx.stocks(code, end_date)
         # 获取成份股财务信息
@@ -178,7 +167,7 @@ class _Data(Tdata):
             valuation.circulating_market_cap,
         ).filter(valuation.code.in_(stocks))
         df = get_fundamentals(q, end_date)
-        
+
         if len(df) == 0:
             return (None, None, None, None, None, None, None, None, None, None,
                     None, None, None, None, None)
@@ -216,8 +205,8 @@ class _Data(Tdata):
         # roe，加权pb除以加权pe
         roe = pb_w / pe_w * 100 if pe_w > 0 else float(np.NaN)
         # 股息率、市值
-        (dyr, cap )= get_divid(dsIdx.stocks(code, end_date), end_date)
-        
+        (dyr, cap) = get_divid(dsIdx.stocks(code, end_date), end_date)
+
         # 返回数据
         return (round(pe_e, 2), round(pb_e, 2), round(ps_e, 2), round(pe_w, 2),
                 round(pb_w, 2), round(ps_w, 2), round(pe_m, 2), round(pb_m, 2),
@@ -252,12 +241,10 @@ class _Data(Tdata):
         # 获取估值数据
         valuation_list = []
         for d in date_list:
-            print(d)
-            print('\r数据更新：%s %s' %
-                  (self.pool.track[code], d),
-                  end="")
-            valuation_list.append(
-                self.__get_hs_day(code, d.strftime('%Y-%m-%')))
+            
+            print('\r数据更新：%s %s' % (self.pool.track[code], d), end="")
+            valuation_list.append(self.__get_hs_day(code,
+                                                    d.strftime('%Y-%m-%')))  #
         print('\r', end="")
 
         # 生成估值数据表

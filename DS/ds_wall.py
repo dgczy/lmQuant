@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
+# 华尔街见闻网站行情数据
 
-#华尔街见闻网站行情数据
-
-#通用模块
-import numpy as np
+# 通用模块
 import pandas as pd
 import json
 import requests
-import time  
-from datetime import timedelta,date,datetime
+import time
+from datetime import timedelta, date, datetime
 
 import sys
-sys.path.append("../TL")
-from tl import date_to_timestamp,timestamp_to_date
+sys.path.append("..")
+from TL.tl import date_to_timestamp, timestamp_to_date
+
 
 """
 代码对照
-
 
 CHINA10YEAR 中国10年期国债
 CHINA5YEAR  中国5年期国债
@@ -65,37 +63,35 @@ FTSEMALAYSIAKLCIINDEX  富时马来西亚KLCI综合指数
 PSEICOMPOSITEINDEX  菲律宾PSE综合股价指数
 """
 
-_codes={
-    # 港股指数  
-    'HSI':'HKG33INDEX',
-    # 美股指数      
-    'SPX':'SPX500INDEX',
-    'DJIA':'US30INDEX',  
-    'NDAQ':'NASINDEX',
-    # 欧洲 指数  
-    'GDAXI':'GER30INDEX', 
-    'FTSE':'UK100INDEX',
-    'FCHI':'FRA40INDEX',
-    'SX5E':'EUSTX50INDEX',
-    # 亚洲指数  
-    'N225':'JPN225INDEX',
+_codes = {
+    # 港股指数
+    'HSI': 'HKG33INDEX',
+    # 美股指数
+    'SPX': 'SPX500INDEX',
+    'DJIA': 'US30INDEX',
+    'NDAQ': 'NASINDEX',
+    # 欧洲 指数
+    'GDAXI': 'GER30INDEX',
+    'FTSE': 'UK100INDEX',
+    'FCHI': 'FRA40INDEX',
+    'SX5E': 'EUSTX50INDEX',
+    # 亚洲指数
+    'N225': 'JPN225INDEX',
     # 指标
-    'VIX':'SP500VIXINDEX',
-    'BDI':'BDIINDEX',
-
-    'UDI':u'USDOLLARINDEX',
-    'VIX':u'SP500VIXINDEX',
-    'BDI':u'BDIINDEX',
-    'C10Y':u'CHINA10YEAR',
-    'C5Y':u'CHINA5YEAR',
-    'U10Y':u'US10YEAR',
-    'U5Y':u'US5YEAR',
-    'UCH':'USDCNH',
-    'UCY':'USDCNY',
-    'USCL':'USCL',#WTI原油
-    'USTEC100F':'USTEC100F',#纳斯达克100指数期货
-    
-    }
+    'VIX': 'SP500VIXINDEX',
+    'BDI': 'BDIINDEX',
+    'UDI': u'USDOLLARINDEX',
+    'VIX': u'SP500VIXINDEX',
+    'BDI': u'BDIINDEX',
+    'C10Y': u'CHINA10YEAR',
+    'C5Y': u'CHINA5YEAR',
+    'U10Y': u'US10YEAR',
+    'U5Y': u'US5YEAR',
+    'UCH': 'USDCNH',
+    'UCY': 'USDCNY',
+    'USCL': 'USCL',  # WTI原油
+    'USTEC100F': 'USTEC100F',  # 纳斯达克100指数期货
+}
 
 
 class Wall(object):
@@ -115,9 +111,8 @@ class Wall(object):
     data_count：每次返回的数据量，网站限制每次最多返回1000条数据
     end_time：截至时间，网站返回的日期格式为时间戳，如1522191600
     """
-    
     @staticmethod
-    def hist_price(code,start_date=None,end_date=None,period='D'):  
+    def hist_price(code, start_date=None, end_date=None, period='D'):
         """
         获取历史行情数据，限制开始、结束时间版本
         code：代码，str
@@ -125,119 +120,122 @@ class Wall(object):
         end_date：结束日期，str，如：2018-07-31
         period：数据线级别，str，分别为：'D'、'W'、'M'（日、周、月）
         """
-                
-        #今日日期
-        today=datetime.now().date()
-        today_str=today.strftime('%Y-%m-%d')
-        
+
+        # 今日日期
+        today = datetime.now().date()
+        today_str = today.strftime('%Y-%m-%d')
+
         # 约束开始日期
-        if start_date>today_str:
+        if start_date > today_str:
             return None
-        
+
         # 转换代码
-        code=_codes[code]  
-        
+        code = _codes[code]
+
         # 约束开始日期
         if not start_date is None:
             # 转换日期为timestamp
-            start_date=date_to_timestamp(start_date)
-            
+            start_date = date_to_timestamp(start_date)
+
         # 结束日期
         if end_date is None:
             # 今日日期
-            end_date=today_str
+            end_date = today_str
         else:
             # 日期+1天(否则取不到end_date当天的值)
-            end_date=(datetime.strptime(end_date,'%Y-%m-%d')+timedelta(1)).strftime('%Y-%m-%d')         
+            end_date = (datetime.strptime(end_date, '%Y-%m-%d') +
+                        timedelta(1)).strftime('%Y-%m-%d')
         # 转换日期为timestamp
-        end_date=date_to_timestamp(end_date)    
-        
-        # 每次取数据时的日期值
-        end_time=end_date          
-        # 转换数据线级别（# '1m':1,'5m':2,'15m':3,'30m':4,'1h':5,'4h':7,）
-        period={'D':8,'W':10,'M':11}[period]
-        # 默认每次获取的数据量（不能超过1000）
-        data_count=1000
+        end_date = date_to_timestamp(end_date)
 
-        df=pd.DataFrame()
-        data_list=[]
-        
+        # 每次取数据时的日期值
+        end_time = end_date
+        # 转换数据线级别（# '1m':1,'5m':2,'15m':3,'30m':4,'1h':5,'4h':7,）
+        period = {'D': 8, 'W': 10, 'M': 11}[period]
+        # 默认每次获取的数据量（不能超过1000）
+        data_count = 1000
+
+        df = pd.DataFrame()
+        data_list = []
+
         while True:
 
-            # 生成url 
-            url='https://forexdata.wallstreetcn.com/kline?prod_code={prod_code}\
+            # 生成url
+            url = 'https://forexdata.wallstreetcn.com/kline?prod_code={prod_code}\
 &candle_period={candle_period}&data_count={data_count}&end_time={end_time}\
-&fields=time_stamp%2Copen_px%2Cclose_px%2Chigh_px%2Clow_px'.format(prod_code=code,
-                   candle_period=period,data_count=data_count,end_time=end_time)
+&fields=time_stamp%2Copen_px%2Cclose_px%2Chigh_px%2Clow_px'.format(
+                prod_code=code,
+                candle_period=period,
+                data_count=data_count,
+                end_time=end_time)
 
             # 请求数据
-            response=requests.get(url).text
-            
+            response = requests.get(url).text
+
             # 获取数据列表
-            data=json.loads(response).get("data").get("candle").get(code)
-           
+            data = json.loads(response).get("data").get("candle").get(code)
+
             # 无数据退出
-            if len(data)==0:
+            if len(data) == 0:
                 break
-                
-            # 反转数据    
+
+            # 反转数据
             data.reverse()
 
             # 查找指定日期范围内的数据
-            b=False
+            b = False
             for item in data:
-                if item[0]<=end_date:
-                    if item[0]<start_date:
-                        b=True
+                if item[0] <= end_date:
+                    if item[0] < start_date:
+                        b = True
                         break
                     data_list.append(item)
-            # 找到指定日期范围内的所有数据，退出        
+            # 找到指定日期范围内的所有数据，退出
             if b:
                 break
 
             # 取得下一次的时间戳
-            end_time=data[-1][0]
+            end_time = data[-1][0]
 
             # 延时
             time.sleep(0.0)
-        
 
         # 无数据
-        if len(data_list)==0:
+        if len(data_list) == 0:
             return None
-        
-        #组织数据
-        df=pd.DataFrame(data_list,columns=['date','open','close','high','low'])
-        
-        # 时间戳转换为日期    
-        df['date']=df['date'].apply(lambda x:timestamp_to_date(x))
-        
-        #去除重复数据（不知为何返回的数据有重复,必须按照日期删除重复）
-        df=df.drop_duplicates(['date'])  
-        
+
+        # 组织数据
+        df = pd.DataFrame(data_list,
+                          columns=['date', 'open', 'close', 'high', 'low'])
+
+        # 时间戳转换为日期
+        df['date'] = df['date'].apply(lambda x: timestamp_to_date(x))
+
+        # 去除重复数据（不知为何返回的数据有重复,必须按照日期删除重复）
+        df = df.drop_duplicates(['date'])
+
         # 重置索引
-        df=df.set_index('date')
-        df.index.name=None
+        df = df.set_index('date')
+        df.index.name = None
 
         # 转换索引为日期格式
-        df.index=pd.to_datetime(df.index,format='%Y-%m-%d')
-        
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d')
+
         # 保留2位小数位
         # df=np.round(df,2)
-        
-        #返回数据（升序）
-        return df.sort_index()   
-     
+
+        # 返回数据（升序）
+        return df.sort_index()
 
     @staticmethod
-    def real_price(code):  
-        #url
-        url='https://forexdata.wallstreetcn.com/real?en_prod_code={en_prod_code}&\
-fields=last_px'.format(en_prod_code=code )
+    def real_price(code):
+        # url
+        url = 'https://forexdata.wallstreetcn.com/real?en_prod_code={en_prod_code}&\
+fields=last_px'.format(en_prod_code=code)
 
-        #请求数据
-        response=requests.get(url)
-        #json解析 
-        json_data=json.loads(response.text).get("data").get("snapshot")
-        #转换为字典
-        return {key:value[0] for key,value in json_data.items()}
+        # 请求数据
+        response = requests.get(url)
+        # json解析
+        json_data = json.loads(response.text).get("data").get("snapshot")
+        # 转换为字典
+        return {key: value[0] for key, value in json_data.items()}

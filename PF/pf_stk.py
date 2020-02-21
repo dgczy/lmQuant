@@ -6,32 +6,21 @@ import pandas as pd
 import time
 from datetime import timedelta, date
 
-# 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import *
-
 import sys
 sys.path.append("../DS")
 sys.path.append("../TL")
 sys.path.append('../DM')
 
-#导入自定义包
-from tl import IN_BACKTEST, get_volatility, get_annualized, get_divid
+# 导入自定义包
+from ds_jqdata import *
 from pf import *
 from ds import dsStk
 
-#必须依照以下顺序导入、设置matplotlib
+# 导入matplotlib
 import matplotlib
-
-if IN_BACKTEST:
-    #策略中绘图必须使用Agg模式（即不显示图形）
-    matplotlib.use('Agg')
-    print('个股框架：运行于策略')
-else:
-    print('个股框架：运行于研究')
-
 import matplotlib.pyplot as plt
+
+print('个股框架：已准备好')
 
 _ID = 'stk'
 _NOTE = '股票'
@@ -39,7 +28,7 @@ _NOTE = '股票'
 
 #判断退市、st股票
 def is_st(code):
-    stock_name = get_security_info(code).display_name
+    stock_name = jqData.security_info(code).display_name
     return stock_name.startswith('*') or stock_name.startswith(
         'ST') or stock_name.startswith('退')
 
@@ -318,7 +307,7 @@ class _Value(Tvalue):
         Tvalue.__init__(self, project, pool, data)
 
     def get_found_date(self, code):
-        return get_security_info(code).start_date
+        return jqData.security_info(code).start_date
 
     def standard_cols(self):
         return ['pe', 'pb', 'ps', 'pcf', 'roe', 'dyr']

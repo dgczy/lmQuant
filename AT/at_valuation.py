@@ -8,13 +8,6 @@ import pandas as pd
 # 导入自定义库
 from pf_idx import Index
 
-#研究、策略中区别配置
-try:
-    #策略中必须导入kuanke.user_space_api包，用于支持read_file
-    from kuanke.user_space_api import read_file,get_price,normalize_code
-except:
-    pass
-    
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 # 市场关注

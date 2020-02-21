@@ -4,7 +4,6 @@
 import numpy as np
 import pandas as pd
 import time
-import jqdatasdk
 
 from datetime import timedelta, date
 
@@ -15,19 +14,14 @@ sys.path.append("../TL")
 sys.path.append('../DM')
 
 #导入自定义包
-from tl import IN_BACKTEST, get_volatility, get_annualized
+# from tl import IN_BACKTEST, get_volatility, get_annualized
 from pf import *
 from ds import dsCmm
 
 #必须依照以下顺序导入、设置matplotlib
 import matplotlib
 
-if IN_BACKTEST:
-    #策略中绘图必须使用Agg模式（即不显示图形）
-    matplotlib.use('Agg')
-    print('商品框架：运行于策略')
-else:
-    print('商品框架：运行于研究')
+print('商品框架：已准备好')
 
 import matplotlib.pyplot as plt
 
@@ -93,9 +87,9 @@ class _Value(Tvalue):
         扩展分析
         """
         # 波动率
-        vlt = get_volatility(df[['close']])
+        vlt = self.get_volatility(df[['close']])
         # 回报率
-        roi = get_annualized(df[['close']])
+        roi = self.get_annualized(df[['close']])
         return vlt, roi
 
     def extend_columns(self):

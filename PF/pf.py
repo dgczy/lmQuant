@@ -4,12 +4,6 @@
 import numpy as np
 import pandas as pd
 import math
-import os
-
-# 聚源数据、交易日
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import get_trade_days
 
 import sys
 
@@ -20,17 +14,11 @@ sys.path.append("../DM")
 from dm import *
 
 # 环境检测
-from tl import IN_BACKTEST, data_to_period, Code, get_volatility
+from tl import data_to_period
+from ds_jqdata import *
 
 # 必须依照以下顺序导入、设置matplotlib
 import matplotlib
-
-if IN_BACKTEST:
-    # 策略中必须导入kuanke.user_space_api包
-    from kuanke.user_space_api import *
-    # 策略中绘图必须使用Agg模式（即后台绘制）
-    matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 
 # 日期时间
@@ -226,7 +214,7 @@ class Tdata(object):
         返回：数据表，DataFrame
         """
         # 代码转换为文件名或表名（数据库）
-        df=self.dm.read(self.to_name(code),cols=items,parse_dates=True)
+        df = self.dm.read(self.to_name(code), cols=items, parse_dates=True)
         # 返回指定年数数据
         if years > 0:
             df = df[df.index >= str(df.index[-1].date() -
@@ -262,8 +250,8 @@ class Tdata(object):
         # 更新日期
         update_date = None
         # 最近一个交易日
-        trade_date = get_trade_days(end_date=pd.datetime.today(),
-                                    count=10)[-2].strftime('%Y-%m-%d')
+        trade_date = jqData.trade_days(end_date=pd.datetime.today(),
+                                       count=10)[-2].strftime('%Y-%m-%d')
         # 数据保存模式
         append = False
 
@@ -292,7 +280,7 @@ class Tdata(object):
                 # 初次获取
                 df = self.get_data(code)
             except Exception as e:
-                print('%s：%s'%(self.pool.name(code),e))
+                print('%s：%s' % (self.pool.name(code), e))
                 continue
 
             if not df is None:
@@ -480,6 +468,62 @@ class Tanalyse(object):
             print('\r数据分析：%s%s，无需重新分析' %
                   (self.project.note, TField.name(self.analyse_name)),
                   end="")
+
+    def get_volatility(self, df, years=None, days=30):
+        """
+        波动率
+        df：数据表，df
+        years：以年为单位的时段，int
+        days：以年为单位的时段，int
+        返回：波动率，float
+        """
+        # 按照年取数据
+        if years is not None:
+            start_date = df.index[-1].date() - timedelta(365 * years)
+            df = df[df.index >= str(start_date)]
+
+        # 按照天数取数据
+        if days is not None:
+            start_date = df.index[-1].date() - timedelta(days + 1)
+            df = df[df.index >= str(start_date)]
+
+        # 无数据返回Nan
+        if len(df) == 0:
+            return float(np.NaN)
+
+        # 前一日收盘价
+        df['pre'] = df.iloc[:, 0].shift(1)
+        # 清除无效数据
+        df = df.dropna()
+        # 日收益率(当日收盘价/前一日收盘价，然后取对数)
+        df['day_volatility'] = np.log(df['pre'] / df.iloc[:, 0])
+        # 波动率（年化收益率的方差*sqrt(250)）
+        volatility = df['day_volatility'].std() * math.sqrt(250.0) * 100
+
+        # 返回值
+        return round(volatility, 2)
+
+    def get_annualized(self, df, years=5):
+        """
+        年化回报率
+        df：数据表，df
+        years：以年为单位的时段，int
+        返回：回报率，float
+        """
+        # 按照年取数据
+        if years is not None:
+            start_date = df.index[-1].date() - timedelta(365 * years)
+            df = df[df.index >= str(start_date)]
+        try:
+            # 总收益率
+            annualized = (df.iloc[:, 0][-1] -
+                          df.iloc[:, 0][0]) / df.iloc[:, 0][0]
+            # 年化收益率
+            annualized = (pow(1 + annualized, 250 / (years * 250.0)) - 1) * 100
+        except:
+            annualized = float(np.NaN)
+        # 返回报率
+        return round(annualized, 2)
 
 
 class Tvalue(Tanalyse):
@@ -886,8 +930,8 @@ class Tchange(Tanalyse):
         """
         扩展分析
         """
-        #波动率、回报率
-        vlt = get_volatility(df[[col]])
+        # 波动率、回报率
+        vlt = self.get_volatility(df[[col]])
         return [vlt]
 
     def extend_columns(self):
@@ -925,8 +969,8 @@ class Tchart(object):
         标题，用于折线图
         """
         fig = ax.get_figure()
-        #         fig.suptitle(title[1],horizontalalignment='left',x=0.095,fontsize=16,alpha=0.8,color='gray')
-        #         ax.set_title(title[0],fontsize=22,loc='left',position=[-0.04,1.13],alpha=0.8)
+        # fig.suptitle(title[1],horizontalalignment='left',x=0.095,fontsize=16,alpha=0.8,color='gray')
+        # ax.set_title(title[0],fontsize=22,loc='left',position=[-0.04,1.13],alpha=0.8)
         fig.text(0.07,
                  1,
                  title[0],
@@ -1594,7 +1638,7 @@ class Ttable(object):
         # 显示指定指数
         df = df[df.index.isin(codes)]
         # 排序
-        # df=df.sort_index([sort],ascending=asc)
+        df = df.sort_values([sort], ascending=asc)
         # 更改标题
         df = df.rename(columns=self.value_columns(item, item_name))
         return df

@@ -60,7 +60,7 @@ def get_discount_162411():
                          dt['close'].iloc[-2]) / dt['close'].iloc[-2]
             print 'T-1日USDCNY涨跌幅 %s %.2f%%' % (t1, t1_usdcny * 100)
 
-            dt = get_price('162411.XSHE',
+            dt = jqData.hist_price('162411.XSHE',
                            end_date=today,
                            frequency='daily',
                            fields=None,

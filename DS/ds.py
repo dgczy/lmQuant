@@ -1,23 +1,12 @@
 # -*- coding:utf-8 -*-
 
-try:
-    # 策略中必须导入kuanke.user_space_api包
-    from kuanke.user_space_api import *
-except:
-    pass
-
 # 日期时间
-from datetime import timedelta, date, datetime
-
-# 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import *
+from datetime import datetime
 
 # 各类数据源
+from ds_jqdata import *
 from ds_hsi import Hsi
 from ds_wall import Wall
-from ds_gidx import GIDX
 from ds_xueqiu import Xueqiu
 from ds_multpl import Spx
 from ds_sws import Sws
@@ -84,23 +73,23 @@ class _CMI(_TData):
             # 今天日期
             end_date = datetime.now().date().strftime('%Y-%m-%d')
         # 历史行情（聚宽数据）
-        return get_price(cls.__convert_code(code),
-                         start_date=start_date,
-                         end_date=end_date,
-                         frequency='daily',
-                         fields=fields)
+        return jqData.hist_price(cls.__convert_code(code),
+                                 start_date=start_date,
+                                 end_date=end_date,
+                                 period='D',
+                                 fields=fields)
 
     @classmethod
     def info(cls, code):
         # 信息（聚宽数据）
-        infos = get_security_info(cls.__convert_code(code))
+        infos = jqData.security_info(cls.__convert_code(code))
         return _TInfo(infos.display_name,
                       infos.start_date.strftime('%Y-%m-%d'), infos.type)
 
     @classmethod
     def stocks(cls, code, end_date=None):
         # 成份股（聚宽数据）
-        return get_index_stocks(cls.__convert_code(code), date=end_date)
+        return jqData.index_stocks(cls.__convert_code(code), date=end_date)
 
 
 class _CMS(_TData):
@@ -134,16 +123,16 @@ class _CMS(_TData):
             # 今天日期
             end_date = datetime.now().date().strftime('%Y-%m-%d')
         # 历史行情（聚宽数据）
-        return get_price(cls.__convert_code(code),
-                         start_date=start_date,
-                         end_date=end_date,
-                         frequency='daily',
-                         fields=fields)
+        return jqData.hist_price(cls.__convert_code(code),
+                                 start_date=start_date,
+                                 end_date=end_date,
+                                 period='D',
+                                 fields=fields)
 
     @classmethod
     def info(cls, code):
         # 信息（聚宽数据）
-        infos = get_security_info(cls.__convert_code(code))
+        infos = jqData.security_info(cls.__convert_code(code))
         return _TInfo(infos.display_name,
                       infos.start_date.strftime('%Y-%m-%d'), infos.type)
 
@@ -159,10 +148,10 @@ class _CMO(_TData):
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # 基金净值（聚宽数据）
-        df = get_extras('unit_net_value',
-                        code,
-                        start_date=start_date,
-                        end_date=end_date)
+        df = jqData.fund_extras('unit_net_value',
+                                code,
+                                start_date=start_date,
+                                end_date=end_date)
         # 更改列名
         df.columns = ['close']
         return df
@@ -170,7 +159,7 @@ class _CMO(_TData):
     @classmethod
     def info(cls, code):
         # 基金信息（聚宽数据）
-        infos = get_security_info(code)
+        infos = jqData.security_info(code)
         return _TInfo(infos.name, infos.start_date.strftime('%Y-%m-%d'),
                       infos.type)
 
@@ -191,7 +180,7 @@ class _CMU(_TData):
     @classmethod
     def info(cls, code):
         # 申万行业信息（聚宽）
-        infos = get_industries(name='sw_l1')
+        infos = jqData.industries_list('sw_l1')
         return _TInfo(infos.at[code, 'name'],
                       infos.at[code, 'start_date'].strftime('%Y-%m-%d'),
                       'industry')
@@ -199,7 +188,7 @@ class _CMU(_TData):
     @staticmethod
     def stocks(code, end_date=None):
         # 申万行业成份股（聚宽）
-        return get_industry_stocks(code, date=end_date)
+        return jqData.industries_stocks(code, date=end_date)
 
 
 class _HMI(_TData):
@@ -222,7 +211,7 @@ class _HMI(_TData):
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # 雪球官网数据
-        df = GIDX.hist_price(code, start_date)
+        df = jqData.GIDX.hist_price(code, start_date)
         if df is None:
             return None
         # 恒生官网数据
@@ -261,7 +250,7 @@ class _SPX(_TData):
     @staticmethod
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # price（雪球官网数据）
-        df = GIDX.hist_price(code, start_date)
+        df = jqData.GIDX.hist_price(code, start_date)
         if df is None:
             return None
         # pe（multpl网站月线数据）
@@ -336,7 +325,7 @@ class _OMI(_TData):
     def hist(code, start_date=None, end_date=None, fields=None, period='D'):
         # 聚宽及英为财情数据
         try:
-            return GIDX.hist_price(code, start_date, end_date)
+            return jqData.GIDX.hist_price(code, start_date, end_date)
         except Exception as e:
             return Invest.hist_price(code, start_date, end_date)
         except Exception as e:

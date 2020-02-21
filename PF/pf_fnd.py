@@ -95,8 +95,8 @@ class _Pool(TPool):
         for fund_code, index_code in pool.items():
             code_fund = self.__convert_code(fund_code)
             code_index = self.__convert_code(index_code)
-            fund = get_security_info(fund_code)
-            index = get_security_info(index_code)
+            fund = jqData.security_info(fund_code)
+            index =jqData.security_info(index_code)
             data_list.append([
                 fund.display_name, fund.type, fund.start_date, code_index,
                 index.display_name

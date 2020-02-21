@@ -4,13 +4,13 @@
 #研究、策略中区别配置
 try:
     from kuanke.user_space_api import *
-    _DATA_PATH = '..Data/'
+    _DATA_PATH = '.Data/'
 except:
-    _DATA_PATH = '..Data/'
+    _DATA_PATH = '.Data/'
 
 #引入自定义库
 import sys
-sys.path.append('../PF')
+sys.path.append('.\PF')
 from pf_idx import Index
 from pf_mcr import Mcr
 from pf_idu import Industry
