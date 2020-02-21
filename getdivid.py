@@ -4,16 +4,9 @@ import pandas as pd
 import math
 import os
 
-try:
-    # 聚源数据、交易日
-    from jqdata import jy
-except:
-    pass
 
 # 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
-from jqdatasdk import *
+from DS.ds_jqdata  import *
 
 # 日期时间
 import time
@@ -39,22 +32,22 @@ def get_jq_divid(code, end_date):
     offset = 0
     while True:
         #查询语句
-        q = query(
+        q = jd.query(
             # 代码
-            finance.STK_XR_XD.code,
+            jd.finance.STK_XR_XD.code,
             # 派息日期
-            finance.STK_XR_XD.report_date,
+            jd.finance.STK_XR_XD.report_date,
             # 派息总额
-            finance.STK_XR_XD.bonus_amount_rmb,
+            jd.finance.STK_XR_XD.bonus_amount_rmb,
         ).filter(
             # 获取指定日期前所有分红
-            finance.STK_XR_XD.report_date <= end_date,
-            finance.STK_XR_XD.bonus_amount_rmb > 0,
-            finance.STK_XR_XD.code.in_(code)
+            jd.finance.STK_XR_XD.report_date <= end_date,
+            jd.finance.STK_XR_XD.bonus_amount_rmb > 0,
+            jd.finance.STK_XR_XD.code.in_(code)
             # 偏移
         ).offset(offset)
         # 查询
-        temp_df = finance.run_query(q)
+        temp_df = jd.finance.run_query(q)
         # 判断是否还有数据了
         if len(temp_df) == 0:
             break
@@ -77,11 +70,11 @@ def get_jq_divid(code, end_date):
         div = df['bonus_amount_rmb'].sum()
 
     # 获取指数总市值
-    q = query(
+    q = jd.query(
         # 市值
-        valuation.market_cap).filter(valuation.code.in_(code))
+        jd.valuation.market_cap).filter(jd.valuation.code.in_(code))
     # 获取各成份股市值(亿元)
-    df = get_fundamentals(q, end_date)
+    df = jd.get_fundamentals(q, end_date)
     # 返回合计的成份股总市值（亿元）
     cap = df['market_cap'].sum()
 

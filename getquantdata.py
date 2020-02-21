@@ -1,22 +1,70 @@
-#引入包
+# -*- coding: utf-8 -*-
+
+# 引入包
 import pandas as pd
-import requests, json, time, os
+import requests
+import json
+import http.cookiejar as cookielib
+import io  
+import sys 
+
+#改变标准输出的默认编码 
+#utf-8中文乱码
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='UTF-8')
+
+# session代表某一次连接
+jqSession = requests.session()
+# 因为原始的session.cookies 没有save()方法，所以需要用到cookielib中的方法LWPCookieJar，这个类实例化的cookie对象，就可以直接调用save方法。
+jqSession.cookies = cookielib.LWPCookieJar(filename = "jqSessionCookies.txt")
+
+
 
 # headers
 header = {
-    "HOST":
-    'www.joinquant.com',
+    "Referer":
+    'https://www.joinquant.com/user/login/index?reason=logout',
     'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400',
-    # "Referer": "https://www.joinquant.com/research?target=research&url=/user/22486821351/view/Data/idx-img-zj.png",
-    # "Accept-Encoding": "gzip, deflate, br"
 }
+
+# 模仿 登录
+def jqLogin(account, password):
+    print("开始模拟登录")
+    postUrl = "https://www.joinquant.com/user/login/index?type=login"
+    postData = {
+        "passport":account,
+        "password":password,
+    }
+    # 使用session直接post请求
+    responseRes = jqSession.post(postUrl, data = postData, headers = header)
+    # 无论是否登录成功，状态码一般都是 statusCode = 200
+    print(f"statusCode = {responseRes.status_code}")
+    # print(f"text = {responseRes.text}",)
+    # 登录成功之后，将cookie保存在本地文件中，好处是，以后再去获取马蜂窝首页的时候，就不需要再走mafengwoLogin的流程了，因为已经从文件中拿到cookie了
+    jqSession.cookies.save()
+
+
+# 通过访问个人中心页面的返回状态码来判断是否为登录状态
+def isLoginStatus():
+    routeUrl = "https://www.joinquant.com/view/user/floor?type=mainFloor"
+    # 下面有两个关键点
+    # 第一个是header，如果不设置，会返回500的错误
+    # 第二个是allow_redirects，如果不设置，session访问时，服务器返回302，
+    # 然后session会自动重定向到登录页面，获取到登录页面之后，变成200的状态码
+    # allow_redirects = False  就是不允许重定向
+    responseRes = jqSession.get(routeUrl, headers = header, allow_redirects = False)
+    print(f"isLoginStatus = {responseRes.status_code}")
+    if responseRes.status_code != 200:
+        return False
+    else:
+        return True
+
 
 
 # cookies
 def get_cookies():
     cookies_str = 'user-22486821351=2|1:0|10:1582197132|16:user-22486821351|48:ZjFlNTliNjQtMzQxNy00NWIyLTk0ZGQtYzEwZTYwOWI0NjUw|4a2e7a6d2062b5b5bbe93e19e14433bc3dfb546280cc97c8bb09768a071d0af1; uid=CiyeXF4nFB6RJwVGnDP3Ag==; gr_user_id=4888dc93-fdda-4579-9b6b-143b29e085cf; UM_distinctid=16fc8a6addf102-00f87b01990676-34564a7c-144000-16fc8a6ade242c; _xsrf=2|5696dfdb|22d9f82efd1303fd8b35829e891bdc2e|1579619405; hideBanner=1; getStrategy=1; CNZZDATA1256107754=189823841-1579616418-https%253A%252F%252Fwww.baidu.com%252F%7C1582167452; token=aef1ba701609dc1fe922b51275b78a615ae33dd2; Hm_lvt_aab1c038280787bd3547c63800577e6b=1581481602,1582091702,1582171814,1582197121; Hm_lpvt_aab1c038280787bd3547c63800577e6b=1582197121; gr_session_id_949f6a566feb9b09=09f57b8d-85c9-41d9-90ff-a0a211150f3c; gr_session_id_949f6a566feb9b09_09f57b8d-85c9-41d9-90ff-a0a211150f3c=true; PHPSESSID=2mk8e2qpg386afie2pspvd0hk4'
-    #cookies_str转换为字典格式
+    # cookies_str转换为字典格式
     cookies_str = cookies_str.split('; ')
     cookies = {}
     for item in cookies_str:
@@ -100,21 +148,38 @@ file_list = [
     'idu_sw1_801720.csv'
 ]
 
-cookies = get_cookies()
+# cookies = get_cookies()
 
-fn = "idx_value.csv"
-try:
+
+
+
+if __name__ == "__main__":
+    # 第一步：尝试使用已有的cookie登录
+    jqSession.cookies.load()
+    isLogin = False#isLoginStatus()
+    print(f"is login = {isLogin}")
+    if isLogin == False:
+        # 第二步：如果cookie已经失效了，那就尝试用帐号登录
+        print(f"cookie失效，用户重新登录...")
+        jqLogin("13695683829", "ssk741212")
+
+    fn = "idx_value.csv"
+    # try:
     print(fn)
     url = "https://www.joinquant.com/user/22486821351/api/contents/Data/%s?type=file&format=text&_=1580445911713" % (
         fn)
-    r = requests.get(url, cookies=cookies, headers=header)
+    r = jqSession.get(url)
+    r.encoding = 'UTF-8'
     print(url)
+    # print(r.text)
+
     data = json.loads(r.text).get('content')
+    
     with open('%s' % (fn), "w", encoding='utf-8') as f:
         f.write(data)
     df = pd.read_csv(fn)
     df=df[df['aid']==10]
     df=df.sort_values("pe_e")
     print(df)
-except Exception as e:
-    print(e)
+    # except Exception as e:
+    #     print(e)
