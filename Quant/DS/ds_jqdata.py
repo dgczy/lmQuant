@@ -7,13 +7,13 @@
 import pandas as pd
 
 # 聚宽数据
-import jqdatasdk
-jqdatasdk.auth("13695683829", "ssk741212")
+import jqdatasdk as jd
+jd.auth("13695683829", "ssk741212")
 from jqdatasdk import *
 
 try:
     # 聚源数据、交易日
-    from jqdata import jy
+    from jqdatasdk import jy
 except:
     pass
 
